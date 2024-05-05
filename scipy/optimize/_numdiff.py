@@ -582,40 +582,46 @@ def _dense_difference(fun, x0, f0, h, use_one_sided, method):
     n = x0.size
     J_transposed = np.empty((n, m))
 
-    for i in range(h.size):
-        if method == '2-point':
-            x = x0.copy()
+    if method == '2-point':
+        x = x0.copy()
+        for i in range(h.size):
             x[i] += h[i]
             dx = x[i] - x0[i]  # Recompute dx as exactly representable number.
             df = fun(x) - f0
-        elif method == '3-point' and use_one_sided[i]:
-            x1 = x0.copy()
-            x2 = x0.copy()
-            x1[i] += h[i]
-            x2[i] += 2 * h[i]
-            dx = x2[i] - x0[i]
-            f1 = fun(x1)
-            f2 = fun(x2)
-            df = -3.0 * f0 + 4 * f1 - f2
-        elif method == '3-point' and not use_one_sided[i]:
-            x1 = x0.copy()
-            x1[i] -= h[i]
-            x2 = x0.copy()
-            x2[i] += h[i]
-            dx = x2[i] - x1[i]
-            f1 = fun(x1)
-            f2 = fun(x2)
-            df = f2 - f1
-        elif method == 'cs':
-            x1 = x0.astype(complex, copy=True)
+            x[i] = x0[i]
+            J_transposed[i] = df / dx
+    elif method == '3-point':
+        x1 = x0.copy()
+        x2 = x0.copy()
+        for i in range(h.size):
+            if use_one_sided[i]:
+                x1[i] += h[i]
+                x2[i] += 2 * h[i]
+                dx = x2[i] - x0[i]
+                f1 = fun(x1)
+                f2 = fun(x2)
+                df = -3.0 * f0 + 4 * f1 - f2
+            else:
+                x1[i] -= h[i]
+                x2[i] += h[i]
+                dx = x2[i] - x1[i]
+                f1 = fun(x1)
+                f2 = fun(x2)
+                df = f2 - f1
+            x1[i] = x2[i] = x0[i]
+            J_transposed[i] = df / dx
+    elif method == 'cs':
+        x1 = x0.astype(complex, copy=True)
+        for i in range(h.size):
             x1[i] += h[i] * 1.j
             f1 = fun(x1)
             df = f1.imag
             dx = h[i]
-        else:
-            raise RuntimeError("Never be here.")
+            x1[i] = x0[i]
+            J_transposed[i] = df / dx
+    else:
+        raise RuntimeError("Never be here.")
 
-        J_transposed[i] = df / dx
 
     if m == 1:
         J_transposed = np.ravel(J_transposed)
