@@ -1,4 +1,5 @@
 import pytest
+import gc
 import numpy as np
 from numpy.testing import (TestCase, assert_array_almost_equal,
                            assert_array_equal, assert_, assert_allclose,
@@ -9,7 +10,7 @@ from scipy.optimize._differentiable_functions import (ScalarFunction,
                                                       VectorFunction,
                                                       LinearVectorFunction,
                                                       IdentityVectorFunction)
-from scipy.optimize import rosen, rosen_der, rosen_hess
+from scipy.optimize import rosen, rosen_der, rosen_hess, minimize
 from scipy.optimize._hessian_update_strategy import BFGS
 
 
@@ -375,6 +376,21 @@ class TestScalarFunction(TestCase):
                             None, (-np.inf, np.inf))
         res = sf.fun(x0)
         assert res.dtype == np.float32
+
+
+def test_gh20768_regression():
+    # ScalarFunction had circular references meaning it wasn't being disposed
+    # of when out of scope.
+    def f():
+        return minimize(
+            rosen,
+            [2, 2, 2, 2],
+            method="L-BFGS-B"
+        )
+    f()
+    for obj in gc.get_objects():
+        if isinstance(obj, ScalarFunction):
+            assert False, "Circular reference to ScalarFunction exists, object isn't disposed of"
 
 
 class ExVectorialFunction:
