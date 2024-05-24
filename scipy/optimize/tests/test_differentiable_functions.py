@@ -760,6 +760,10 @@ def test_IdentityVectorFunction():
     assert_array_equal(f1.hess(x, v).toarray(), np.zeros((3, 3)))
 
 
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
 def test_ScalarFunctionNoReferenceCycle():
     """Regression test for gh-20768."""
     ex = ExScalarFunction()
@@ -769,6 +773,10 @@ def test_ScalarFunctionNoReferenceCycle():
         pass
 
 
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
 @pytest.mark.xfail(reason="TODO remove reference cycle from VectorFunction")
 @pytest.mark.skipif(
     platform.python_implementation() == "PyPy",
@@ -783,6 +791,10 @@ def test_VectorFunctionNoReferenceCycle():
         pass
 
 
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
 def test_LinearVectorFunctionNoReferenceCycle():
     """Regression test for gh-20768."""
     A_dense = np.array([
