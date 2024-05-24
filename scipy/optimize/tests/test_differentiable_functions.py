@@ -390,7 +390,8 @@ def test_gh20768_regression():
     f()
     for obj in gc.get_objects():
         if isinstance(obj, ScalarFunction):
-            assert False, "Circular reference to ScalarFunction exists, object isn't disposed of"
+            assert False, ("Circular reference to ScalarFunction exists,"
+                           " object isn't disposed of")
 
 
 class ExVectorialFunction:
