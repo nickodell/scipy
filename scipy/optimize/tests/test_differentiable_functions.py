@@ -1,5 +1,5 @@
 import pytest
-import weakref
+import platform
 import numpy as np
 from numpy.testing import (TestCase, assert_array_almost_equal,
                            assert_array_equal, assert_, assert_allclose,
