@@ -1,5 +1,6 @@
 import pytest
 import gc
+import platform
 import numpy as np
 from numpy.testing import (TestCase, assert_array_almost_equal,
                            assert_array_equal, assert_, assert_allclose,
@@ -12,6 +13,7 @@ from scipy.optimize._differentiable_functions import (ScalarFunction,
                                                       IdentityVectorFunction)
 from scipy.optimize import rosen, rosen_der, rosen_hess, minimize
 from scipy.optimize._hessian_update_strategy import BFGS
+from scipy._lib._gcutils import assert_deallocated
 
 
 class ExScalarFunction:
@@ -378,20 +380,26 @@ class TestScalarFunction(TestCase):
         assert res.dtype == np.float32
 
 
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
 def test_gh20768_regression():
     # ScalarFunction had circular references meaning it wasn't being disposed
     # of when out of scope.
+    # raises ReferenceError
     def f():
-        return minimize(
+        return ScalarFunction(
             rosen,
             [2, 2, 2, 2],
-            method="L-BFGS-B"
+            (),
+            rosen_der,
+            rosen_hess,
+            None,
+            None
         )
-    f()
-    for obj in gc.get_objects():
-        if isinstance(obj, ScalarFunction):
-            assert False, ("Circular reference to ScalarFunction exists,"
-                           " object isn't disposed of")
+    with assert_deallocated(f) as c:
+        del c
 
 
 class ExVectorialFunction:
