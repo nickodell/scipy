@@ -11,8 +11,9 @@ from scipy.optimize._differentiable_functions import (ScalarFunction,
                                                       VectorFunction,
                                                       LinearVectorFunction,
                                                       IdentityVectorFunction)
-from scipy.optimize import rosen, rosen_der, rosen_hess
+from scipy.optimize import rosen, rosen_der, rosen_hess, minimize
 from scipy.optimize._hessian_update_strategy import BFGS
+from scipy._lib._gcutils import assert_deallocated
 
 
 class ExScalarFunction:
@@ -377,6 +378,28 @@ class TestScalarFunction(TestCase):
                             None, (-np.inf, np.inf))
         res = sf.fun(x0)
         assert res.dtype == np.float32
+
+
+@pytest.mark.skipif(
+    platform.python_implementation() == "PyPy",
+    reason="assert_deallocate not available on PyPy"
+)
+def test_gh20768_regression():
+    # ScalarFunction had circular references meaning it wasn't being disposed
+    # of when out of scope.
+    # raises ReferenceError
+    def f():
+        return ScalarFunction(
+            rosen,
+            [2, 2, 2, 2],
+            (),
+            rosen_der,
+            rosen_hess,
+            None,
+            None
+        )
+    with assert_deallocated(f) as c:
+        del c
 
 
 class ExVectorialFunction:
@@ -778,10 +801,6 @@ def test_ScalarFunctionNoReferenceCycle():
     reason="assert_deallocate not available on PyPy"
 )
 @pytest.mark.xfail(reason="TODO remove reference cycle from VectorFunction")
-@pytest.mark.skipif(
-    platform.python_implementation() == "PyPy",
-    reason="assert_deallocate not available on PyPy"
-)
 def test_VectorFunctionNoReferenceCycle():
     """Regression test for gh-20768."""
     ex = ExVectorialFunction()
