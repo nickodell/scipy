@@ -155,10 +155,12 @@ def tfqmr(A, b, x0=None, *, rtol=1e-5, atol=0., maxiter=None, M=None,
 
         # Convergence criterion
         if tau * np.sqrt(iter+1) < atol:
-            if (show):
-                print("TFQMR: Linear solve converged due to reach TOL "
-                      f"iterations {iter+1}")
-            return (postprocess(x), 0)
+            error = b - A.matvec(x)
+            if np.linalg.norm(error) < atol:
+                if (show):
+                    print("TFQMR: Linear solve converged due to reach TOL "
+                          f"iterations {iter+1}")
+                return (postprocess(x), 0)
 
         if (not even):
             # [1]-(5.7)
