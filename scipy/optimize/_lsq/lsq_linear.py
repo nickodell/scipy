@@ -36,7 +36,7 @@ TERMINATION_MESSAGES = {
 
 def lsq_linear(A, b, bounds=(-np.inf, np.inf), method='trf', tol=1e-10,
                lsq_solver=None, lsmr_tol=None, max_iter=None,
-               verbose=0, *, lsmr_maxiter=None,):
+               verbose=0, *, lsmr_maxiter=None, x0=None,):
     r"""Solve a linear least-squares problem with bounds on the variables.
 
     Given a m-by-n design matrix A and a target vector b with m elements,
@@ -123,6 +123,9 @@ def lsq_linear(A, b, bounds=(-np.inf, np.inf), method='trf', tol=1e-10,
         uses lsmr's default of ``min(m, n)`` where ``m`` and ``n`` are the
         number of rows and columns of `A`, respectively. Has no effect if
         ``lsq_solver='exact'``.
+    x0 : array_like, shape (n,)
+        A guess for the solution. Defaults to unbounded least-square
+        solution for the problem.
 
     Returns
     -------
@@ -291,6 +294,14 @@ def lsq_linear(A, b, bounds=(-np.inf, np.inf), method='trf', tol=1e-10,
     if b.size != m:
         raise ValueError("Inconsistent shapes between `A` and `b`.")
 
+    if x0 is not None:
+        x0 = np.atleast_1d(x0)
+        if x0.ndim != 1:
+            raise ValueError("`x0` must have at most 1 dimension")
+
+        if x0.size != n:
+            raise ValueError("Inconsistent shapes between `A` and `x0`.")
+
     if isinstance(bounds, Bounds):
         lb = bounds.lb
         ub = bounds.ub
@@ -311,17 +322,24 @@ def lsq_linear(A, b, bounds=(-np.inf, np.inf), method='trf', tol=1e-10,
             lsmr_tol in ('auto', None)):
         raise ValueError("`lsmr_tol` must be None, 'auto', or positive float.")
 
-    if lsq_solver == 'exact':
+    allow_early_exit = True
+    if x0 is not None:
+        # Even if this solution is inside the bounds, it might not be the best
+        # solution.
+        allow_early_exit = False
+        x_lsq = x0
+    elif lsq_solver == 'exact':
         unbd_lsq = np.linalg.lstsq(A, b, rcond=-1)
+        x_lsq = unbd_lsq[0]  # extract the solution from the least squares solver
     elif lsq_solver == 'lsmr':
         first_lsmr_tol = lsmr_tol  # tol of first call to lsmr
         if lsmr_tol is None or lsmr_tol == 'auto':
             first_lsmr_tol = 1e-2 * tol  # default if lsmr_tol not defined
         unbd_lsq = lsmr(A, b, maxiter=lsmr_maxiter,
                         atol=first_lsmr_tol, btol=first_lsmr_tol)
-    x_lsq = unbd_lsq[0]  # extract the solution from the least squares solver
+        x_lsq = unbd_lsq[0]  # extract the solution from the least squares solver
 
-    if in_bounds(x_lsq, lb, ub):
+    if allow_early_exit and in_bounds(x_lsq, lb, ub):
         r = A @ x_lsq - b
         cost = 0.5 * np.dot(r, r)
         termination_status = 3
@@ -345,7 +363,9 @@ def lsq_linear(A, b, bounds=(-np.inf, np.inf), method='trf', tol=1e-10,
     elif method == 'bvls':
         res = bvls(A, b, x_lsq, lb, ub, tol, max_iter, verbose)
 
-    res.unbounded_sol = unbd_lsq
+    if x0 is None:
+        # If x0 is not None, we never computed this
+        res.unbounded_sol = unbd_lsq
     res.message = TERMINATION_MESSAGES[res.status]
     res.success = res.status > 0
 
