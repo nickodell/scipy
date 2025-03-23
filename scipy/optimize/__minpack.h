@@ -680,7 +680,7 @@ static PyObject *minpack_lmder(PyObject *dummy, PyObject *args) {
   INIT_JAC_FUNC(fcn,Dfun,extra_args,col_deriv,minpack_error);
 
   /* Initial input vector */
-  ap_x = (PyArrayObject *)PyArray_ContiguousFromObject(x0, NPY_DOUBLE, 1, 1);
+  ap_x = (PyArrayObject *)PyArray_FromAny(x0, PyArray_DescrFromType(NPY_DOUBLE), 1, 1, NPY_ARRAY_DEFAULT | NPY_ARRAY_ENSUREARRAY | NPY_ARRAY_ENSURECOPY, NULL);
   if (ap_x == NULL) goto fail;
   x = (double *) PyArray_DATA(ap_x);
   if (n != PyArray_DIMS(ap_x)[0]) goto fail;
