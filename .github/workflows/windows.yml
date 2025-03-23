@@ -62,13 +62,27 @@ jobs:
         run: |
           # test runner parallel clashes with OpenBLAS multithreading
           $env:OPENBLAS_NUM_THREADS=1
-          python dev.py test -j2 -- --durations=0 --durations-min=0.25 --json-report --json-report-omit keywords --json-report-file ~/test-report-baseline.json
+          # python dev.py test -j2 -- --durations=0 --durations-min=0.25 --json-report --json-report-omit keywords --json-report-file ~/test-report-baseline.json
+          # Create directory ~/reports if it doesn't exist
+          if (!(Test-Path "$Home\reports")) {
+              New-Item -ItemType Directory -Path "$Home\reports" | Out-Null
+          }
+
+          for ($i = 1; $i -le 1; $i++) {
+              Write-Host "Running iteration $i"
+              python -m pip install pytest-fail-slow==0.6.0
+              python dev.py test -j2 --mode full -- --durations=0 --durations-min=0.25 --json-report --json-report-omit keywords --json-report-file ~/reports/test-report-baseline-$i.json
+              # Run using cpu time version
+              pip install git+https://github.com/nickodell/pytest-fail-slow-cpu.git
+              python dev.py test -j2 --mode full -- --durations=0 --durations-min=0.25 --json-report --json-report-omit keywords --json-report-file ~/reports/test-report-cputime-$i.json
+          }
+
 
       # Upload report file
       - uses: actions/upload-artifact@v4
         with:
-          name: test-report-baseline
-          path: ~/test-report-baseline.json
+          name: reports
+          path: ~/reports
 
 
 #  #############################################################################
