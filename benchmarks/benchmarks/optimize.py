@@ -474,6 +474,45 @@ class BenchLeastSquares(Benchmark):
         else:
             raise NotImplementedError
 
+'''
+class BenchNewLeastSquares(Benchmark):
+    """Class for benchmarking nonlinear least squares solvers."""
+    problems = extract_lsq_problems()
+    params = [
+        list(problems.keys()),
+        ["average time", "nfev", "success"]
+    ]
+    param_names = [
+        "problem", "result type"
+    ]
+
+    def track_all(self, problem_name, result_type):
+        problem = self.problems[problem_name]
+
+        if problem.lb is not None or problem.ub is not None:
+            raise NotImplementedError
+
+        ftol = 1e-5
+
+        if result_type == 'average time':
+            n_runs = 10
+            t0 = time.time()
+            for _ in range(n_runs):
+                leastsq(problem.fun, problem.x0, Dfun=problem.jac, ftol=ftol,
+                        full_output=True)
+            return (time.time() - t0) / n_runs
+
+        x, cov_x, info, message, ier = leastsq(
+            problem.fun, problem.x0, Dfun=problem.jac,
+            ftol=ftol, full_output=True
+        )
+        if result_type == 'nfev':
+            return info['nfev']
+        elif result_type == 'success':
+            return int(problem.check_answer(x, ftol))
+        else:
+            raise NotImplementedError
+'''
 
 # `export SCIPY_XSLOW=1` to enable BenchGlobal.track_all
 # `export SCIPY_GLOBAL_BENCH=AMGM,Adjiman,...` to run specific tests
