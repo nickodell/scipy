@@ -3,7 +3,7 @@ from functools import partial
 
 import numpy as np
 import scipy.sparse as sps
-from ._numdiff import approx_derivative, group_columns
+from ._numdiff import approx_derivative, group_columns, _prepare_bounds
 from ._hessian_update_strategy import HessianUpdateStrategy
 from scipy.sparse.linalg import LinearOperator
 from scipy._lib._array_api import array_namespace
@@ -474,7 +474,7 @@ class VectorFunction:
                 sparsity_groups = group_columns(finite_diff_jac_sparsity)
                 finite_diff_options["sparsity"] = (finite_diff_jac_sparsity,
                                                    sparsity_groups)
-            finite_diff_options["bounds"] = finite_diff_bounds
+            finite_diff_options["bounds"] = _prepare_bounds(finite_diff_bounds, self.x)
             finite_diff_options["workers"] = workers
             finite_diff_options["full_output"] = True
             self.x_diff = np.copy(self.x)
