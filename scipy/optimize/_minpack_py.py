@@ -444,7 +444,7 @@ def leastsq(func, x0, args=(), Dfun=None, full_output=False,
             _check_func('leastsq', 'Dfun', Dfun, x0, args, n, (m, n))
         if maxfev == 0:
             maxfev = 100 * (n + 1)
-        retval = _minpack._lmder(func, Dfun, x0, args, full_output,
+        retval = _minpack._lmder(func, Dfun, m, n, x0, args, full_output,
                                  col_deriv, ftol, xtol, gtol, maxfev,
                                  factor, diag)
 

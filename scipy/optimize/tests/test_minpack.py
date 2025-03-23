@@ -321,6 +321,18 @@ class TestLeastSq:
         # low precision due to random
         assert_array_almost_equal(params_fit, self.abc, decimal=2)
 
+    def test_basic_with_gradient_col_deriv(self):
+        p0 = array([0,0,0])
+        def residuals_jacobian_transposed(x, *args):
+            return self.residuals_jacobian(x, *args).T
+        params_fit, ier = leastsq(self.residuals, p0,
+                                  args=(self.y_meas, self.x),
+                                  Dfun=residuals_jacobian_transposed,
+                                  col_deriv=True)
+        assert_(ier in (1, 2, 3, 4), f'solution not found (ier={ier})')
+        # low precision due to random
+        assert_array_almost_equal(params_fit, self.abc, decimal=2)
+
     def test_full_output(self):
         p0 = array([[0,0,0]])
         full_output = leastsq(self.residuals, p0,
