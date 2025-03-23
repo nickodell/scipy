@@ -42,7 +42,7 @@ FROM_MINPACK_TO_COMMON = {
 }
 
 
-def call_minpack(fun, x0, jac, ftol, xtol, gtol, max_nfev, x_scale, jac_method=None):
+def call_minpack(fun, m, x0, jac, ftol, xtol, gtol, max_nfev, x_scale, jac_method=None):
     n = x0.size
 
     # Compute MINPACK's `diag`, which is inverse of our `x_scale` and
@@ -65,7 +65,7 @@ def call_minpack(fun, x0, jac, ftol, xtol, gtol, max_nfev, x_scale, jac_method=N
     # We now do all the finite differencing in VectorFunction, which means we can drop
     # lmdif and just use lmder.
     x, info, status = _minpack._lmder(
-        fun, jac, x0, (), full_output, col_deriv,
+        fun, jac, m, n, x0, (), full_output, col_deriv,
         ftol, xtol, gtol, max_nfev, factor, diag)
 
     f = info['fvec']
@@ -978,7 +978,7 @@ def least_squares(
         if callback is not None:
             warn("Callback function specified, but not supported with `lm` method.",
                  stacklevel=2)
-        result = call_minpack(vector_fun.fun, x0, vector_fun.jac, ftol, xtol, gtol,
+        result = call_minpack(vector_fun.fun, m, x0, vector_fun.jac, ftol, xtol, gtol,
                               max_nfev, x_scale, jac_method=jac)
         # VectorFunction tracks number of times fun was actually called (it tries to
         # memoise where possible), including numerical differentiation.

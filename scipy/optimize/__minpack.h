@@ -650,16 +650,16 @@ static PyObject *minpack_lmdif(PyObject *dummy, PyObject *args) {
 }
 
 
-static char doc_lmder[] = "[x,infodict,info] = _lmder(fun, Dfun, x0, args, full_output, col_deriv, ftol, xtol, gtol, maxfev, factor, diag)";
+static char doc_lmder[] = "[x,infodict,info] = _lmder(fun, Dfun, m, n, x0, args, full_output, col_deriv, ftol, xtol, gtol, maxfev, factor, diag)";
 
 static PyObject *minpack_lmder(PyObject *dummy, PyObject *args) {
   PyObject *fcn, *x0, *Dfun, *extra_args = NULL, *o_diag = NULL;
   int      full_output = 0, maxfev = -10, col_deriv = 1;
   double   xtol = 1.49012e-8, ftol = 1.49012e-8;
   double   gtol = 0.0, factor = 1.0e2;
-  int      m, mode = 2, nprint = 0, info, nfev, njev, ldfjac, *ipvt;
-  npy_intp n;
-  int n_int;
+  int      mode = 2, nprint = 0, info, nfev, njev, ldfjac, *ipvt;
+  npy_intp n, m;
+  int      n_int, m_int;
   double   *x, *fvec, *diag, *fjac, *qtf;
 
   PyArrayObject *ap_x = NULL, *ap_fvec = NULL;
@@ -672,7 +672,10 @@ static PyObject *minpack_lmder(PyObject *dummy, PyObject *args) {
 
   STORE_VARS();
 
-  if (!PyArg_ParseTuple(args, "OOO|OiidddidO", &fcn, &Dfun, &x0, &extra_args, &full_output, &col_deriv, &ftol, &xtol, &gtol, &maxfev, &factor, &o_diag)) return NULL;
+  if (!PyArg_ParseTuple(args, "OOiiO|OiidddidO", &fcn, &Dfun, &m_int, &n_int, &x0, &extra_args, &full_output, &col_deriv, &ftol, &xtol, &gtol, &maxfev, &factor, &o_diag)) return NULL;
+
+  n = n_int;
+  m = m_int;
 
   INIT_JAC_FUNC(fcn,Dfun,extra_args,col_deriv,minpack_error);
 
@@ -680,29 +683,25 @@ static PyObject *minpack_lmder(PyObject *dummy, PyObject *args) {
   ap_x = (PyArrayObject *)PyArray_ContiguousFromObject(x0, NPY_DOUBLE, 1, 1);
   if (ap_x == NULL) goto fail;
   x = (double *) PyArray_DATA(ap_x);
-  n = PyArray_DIMS(ap_x)[0];
+  if (n != PyArray_DIMS(ap_x)[0]) goto fail;
 
   if (maxfev < 0) maxfev = 100*(n+1);
 
-  /* Setup array to hold the function evaluations */
-  ap_fvec = (PyArrayObject *)call_python_function(fcn, n, x, extra_args, 1, minpack_error, -1);
-  if (ap_fvec == NULL) goto fail;
-  fvec = (double *) PyArray_DATA(ap_fvec);
-
   SET_DIAG(ap_diag,o_diag,mode);
-
-  m = (PyArray_NDIM(ap_fvec) > 0 ? PyArray_DIMS(ap_fvec)[0] : 1);
 
   dims[0] = n; dims[1] = m;
   ap_ipvt = (PyArrayObject *)PyArray_SimpleNew(1,&n,NPY_INT);
   ap_qtf = (PyArrayObject *)PyArray_SimpleNew(1,&n,NPY_DOUBLE);
   ap_fjac = (PyArrayObject *)PyArray_SimpleNew(2,dims,NPY_DOUBLE);
+  /* Setup array to hold the function evaluations */
+  ap_fvec = (PyArrayObject *)PyArray_SimpleNew(1,&m,NPY_DOUBLE);
 
-  if (ap_ipvt == NULL || ap_qtf == NULL || ap_fjac ==NULL) goto fail;
+  if (ap_ipvt == NULL || ap_qtf == NULL || ap_fjac == NULL || ap_fvec == NULL) goto fail;
 
   ipvt = (int *) PyArray_DATA(ap_ipvt);
   qtf = (double *) PyArray_DATA(ap_qtf);
   fjac = (double *) PyArray_DATA(ap_fjac);
+  fvec = (double *) PyArray_DATA(ap_fvec);
   ldfjac = dims[1];
   wa = (double *)malloc((3*n + m)* sizeof(double));
   if (wa == NULL) {
