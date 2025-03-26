@@ -133,6 +133,23 @@ def _highs_wrapper(c, indptr, indices, data, lhs, rhs, lb, ub, integrality, opti
 
     # Make a Highs object and pass it everything
     highs = _h._Highs()
+
+    # Set up logging
+    logger = _HighsLogger()
+    if options['log_to_console'] and options['output_flag']:
+        # Capture warnings and print output to console
+        callback_status = highs.setCallback(logger.log_to_console, None)
+    else:
+        # Only capture warnings
+        callback_status = highs.setCallback(logger.capture_warnings, None)
+    if callback_status != _h.HighsStatus.kOk:
+        raise Exception("Could not set callback")
+    options['log_to_console'] = True
+    options['output_flag'] = True
+    callback_status = highs.startCallback(_h.cb.HighsCallbackType.kCallbackLogging)
+    if callback_status != _h.HighsStatus.kOk:
+        raise Exception("Could not start callback")
+
     highs_options = _h.HighsOptions()
     hoptmanager = hopt.HighsOptionsManager()
     for key, val in options.items():
@@ -189,6 +206,8 @@ def _highs_wrapper(c, indptr, indices, data, lhs, rhs, lb, ub, integrality, opti
             }
         )
         return res
+    elif opt_status == _h.HighsStatus.kWarning:
+        logger.warn_if_no_warnings('option parsing')
 
     init_status = highs.passModel(lp)
     if init_status == _h.HighsStatus.kError:
@@ -201,6 +220,8 @@ def _highs_wrapper(c, indptr, indices, data, lhs, rhs, lb, ub, integrality, opti
             }
         )
         return res
+    elif init_status == _h.HighsStatus.kWarning:
+        logger.warn_if_no_warnings('passing the model')
 
     # Solve the LP
     run_status = highs.run()
@@ -212,6 +233,8 @@ def _highs_wrapper(c, indptr, indices, data, lhs, rhs, lb, ub, integrality, opti
             }
         )
         return res
+    elif run_status == _h.HighsStatus.kWarning:
+        logger.warn_if_no_warnings('solve')
 
     # Extract what we need from the solution
     model_status = highs.getModelStatus()
@@ -301,6 +324,28 @@ def _highs_wrapper(c, indptr, indices, data, lhs, rhs, lb, ub, integrality, opti
         )
 
     return res
+
+
+class _HighsLogger:
+    def __init__(self):
+        self.warnings = []
+        self.warning_code = _h.HighsLogType.kWarning.value
+    def capture_warnings(self, callback_type, msg, data_out, data_in, user_data):
+        log_type = data_out.log_type
+        if log_type == self.warning_code:
+            self.warnings.append(msg)
+            warn(msg[len('WARNING: '):], OptimizeWarning, stacklevel=5)
+    def log_to_console(self, callback_type, msg, data_out, data_in, user_data):
+        self.capture_warnings(callback_type, msg, data_out, data_in, user_data)
+        print(msg, end='')
+    def warn_if_no_warnings(self, phase):
+        if len(self.warnings) == 0:
+            warn(
+                f"An unknown warning was encountered during {phase}",
+                OptimizeWarning,
+                stacklevel=3,
+            )
+        self.warnings.clear()
 
 
 def check_option(highs_inst, option, value):
