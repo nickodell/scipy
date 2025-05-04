@@ -160,7 +160,7 @@ struct nodeinfo_pool {
     // Tuning parameter:
     // Alignment should hit a cache line and also cater for simd. 
     // For most hardware 64 is OK, but Apple silicon needs 128.
-    #define ALIGN 128
+    #define ALIGN 8
 
     // Tuning parameter:
     // Minumum arena size should be at least one page.
