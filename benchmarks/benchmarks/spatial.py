@@ -16,9 +16,10 @@ with safe_import():
     from scipy.spatial.transform import Rotation
 
 
+size_mult = 10
 class Build(Benchmark):
     params = [
-        [(3,10000,1000), (8,10000,1000), (16,10000,1000)],
+        [(3,10000 * size_mult,1000), (8,10000 * size_mult,1000), (16,10000 * size_mult, 1000)],
         ['KDTree', 'cKDTree'],
     ]
     param_names = ['(m, n, r)', 'class']
@@ -46,13 +47,12 @@ class Build(Benchmark):
         else:
             self.cls(self.data)
 
-
 class PresortedDataSetup(Benchmark):
     params = [
-        [(3, 10 ** 4, 1000), (8, 10 ** 4, 1000), (16, 10 ** 4, 1000)],
+        [(3, 10 ** 4 * size_mult, 1000), (8, 10 ** 4 * size_mult, 1000), (16, 10 ** 4 * size_mult, 1000)],
         [True, False],
         ['random', 'sorted'],
-        [0.5]
+        [0.5 / size_mult]
     ]
     param_names = ['(m, n, r)', 'balanced', 'order', 'radius']
 
@@ -95,7 +95,8 @@ class QueryUnbalanced(PresortedDataSetup):
 
 class RadiusUnbalanced(PresortedDataSetup):
     params = PresortedDataSetup.params[:]
-    params[0] = [(3, 1000, 30), (8, 1000, 30), (16, 1000, 30)]
+    params[0] = [(3, 10000, 30), (8, 20000, 30), (16, 100000, 30)]
+    params[2] = ['random']
 
     def time_query_pairs(self, mnr, balanced, order, radius):
         self.T.query_pairs(radius)
@@ -146,7 +147,7 @@ class Query(LimitedParamBenchmark):
 
 class Radius(LimitedParamBenchmark):
     params = [
-        [(3,10000,1000)],
+        [(3,10000 * size_mult,1000)],
         [1, 2, np.inf],
         [0.2, 0.5],
         BOX_SIZES, LEAF_SIZES,
