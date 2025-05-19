@@ -18,7 +18,7 @@ jobs:
     name: Run CircleCI artifacts redirector
     steps:
       - name: GitHub Action step
-        uses: nickodell/circleci-artifacts-redirector-action@e396aa885116bf6964236ba34707f520d11d0034
+        uses: nickodell/circleci-artifacts-redirector-action@njo-test-modification
         with:
           repo-token: ${{ secrets.GITHUB_TOKEN }}
           api-token: ${{ secrets.CIRCLE_TOKEN }}
