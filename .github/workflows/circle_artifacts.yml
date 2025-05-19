@@ -9,19 +9,30 @@ permissions:
 env:
   ACTIONS_STEP_DEBUG: "true"
 
+# jobs:
+#   circleci_artifacts_redirector_job:
+#     runs-on: ubuntu-22.04
+#     if: >
+#       github.repository == 'nickodell/scipy'
+#       && github.event.context == 'ci/circleci: build_docs'
+#     name: Run CircleCI artifacts redirector
+#     steps:
+#       - name: GitHub Action step
+#         uses: nickodell/circleci-artifacts-redirector-action@njo-test-modification
+#         with:
+#           repo-token: ${{ secrets.GITHUB_TOKEN }}
+#           api-token: ${{ secrets.CIRCLE_TOKEN }}
+#           artifact-path: 0/html/index.html
+#           circleci-jobs: build_docs
+#           job-title: Check the rendered docs here!
+
 jobs:
-  circleci_artifacts_redirector_job:
-    runs-on: ubuntu-22.04
-    if: >
-      github.repository == 'nickodell/scipy'
-      && github.event.context == 'ci/circleci: build_docs'
-    name: Run CircleCI artifacts redirector
+  printJob:
+    name: Print event
+    runs-on: ubuntu-latest
     steps:
-      - name: GitHub Action step
-        uses: nickodell/circleci-artifacts-redirector-action@njo-test-modification
-        with:
-          repo-token: ${{ secrets.GITHUB_TOKEN }}
-          api-token: ${{ secrets.CIRCLE_TOKEN }}
-          artifact-path: 0/html/index.html
-          circleci-jobs: build_docs
-          job-title: Check the rendered docs here!
+    - name: Dump GitHub context
+      env:
+        GITHUB_CONTEXT: ${{ toJson(github) }}
+      run: |
+        echo "$GITHUB_CONTEXT"
