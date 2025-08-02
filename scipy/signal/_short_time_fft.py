@@ -1,11 +1,7 @@
 """Implementation of an FFT-based Short-time Fourier Transform. """
 
-# Implementation Notes for this file (as of 2023-07)
+# Implementation Notes for this file (as of 2025-08)
 # --------------------------------------------------
-# * MyPy version 1.1.1 does not seem to support decorated property methods
-#   properly. Hence, applying ``@property`` to methods decorated with `@cache``
-#   (as tried with the ``lower_border_end`` method) causes a mypy error when
-#   accessing it as an index (e.g., ``SFT.lower_border_end[0]``).
 # * Since the method `stft` and `istft` have identical names as the legacy
 #   functions in the signal module, referencing them as HTML link in the
 #   docstrings has to be done by an explicit `~ShortTimeFFT.stft` instead of an
@@ -19,8 +15,9 @@
 
 # Provides typing union operator ``|`` in Python 3.9:
 # Linter does not allow to import ``Generator`` from ``typing`` module:
+from collections import OrderedDict
 from collections.abc import Generator, Callable
-from functools import lru_cache, partial, cached_property
+from functools import partial, cached_property
 from types import GenericAlias
 from typing import get_args, Literal
 
@@ -420,6 +417,11 @@ class ShortTimeFFT:
     _fac_mag: float | None = None
     _fac_psd: float | None = None
     _lower_border_end: tuple[int, int] | None = None
+    # LRU-Cached based on OrderedDicts:
+    # Taken from https://docs.python.org/3.12/library/collections.html#ordereddict-examples-and-recipes
+    _post_padding_cache: OrderedDict[int, tuple[int, int]]
+    _upper_border_begin_cache: OrderedDict[int, tuple[int, int]]
+    _t_cache: OrderedDict[tuple[int, int | None, int | None, int | None], np.ndarray]
 
     # generic type compatibility with scipy-stubs
     __class_getitem__ = classmethod(GenericAlias)
@@ -453,6 +455,10 @@ class ShortTimeFFT:
             self.scale_to(scale_to)
 
         self.fft_mode, self.phase_shift = fft_mode, phase_shift
+        # Internal LRU Caches:
+        self._post_padding_cache = OrderedDict()
+        self._upper_border_begin_cache = OrderedDict()
+        self._t_cache = OrderedDict()
 
     @classmethod
     def from_dual(cls, dual_win: np.ndarray, hop: int, fs: float, *,
@@ -1677,7 +1683,6 @@ class ShortTimeFFT:
         """
         return self._pre_padding[1]
 
-    @lru_cache(maxsize=256)
     def _post_padding(self, n: int) -> tuple[int, int]:
         """Largest signal index and slice index due to padding.
 
@@ -1686,6 +1691,10 @@ class ShortTimeFFT:
         n : int
             Number of samples of input signal (must be ≥ half of the window length).
         """
+        # The last 256 calls are cached in the attribute `self._post_padding_cache`.
+        if n in self._post_padding_cache:  # try to use cached value
+            self._post_padding_cache.move_to_end(n)
+            return self._post_padding_cache[n]
         if not (n >= (m2p := self.m_num - self.m_num_mid)):
             raise ValueError(f"Parameter n must be >= ceil(m_num/2) = {m2p}!")
         w2 = self.win.real**2 + self.win.imag**2
@@ -1695,7 +1704,10 @@ class ShortTimeFFT:
         for q_, k_ in enumerate(range(k1, n+self.m_num, self.hop), start=q1):
             n_next = k_ + self.hop
             if n_next >= n or all(w2[:n-n_next] == 0):
-                return k_ + self.m_num, q_ + 1
+                self._post_padding_cache[n] = (k_ + self.m_num, q_ + 1)
+                if len(self._post_padding_cache) > 256:  # remove the oldest cache item:
+                    self._post_padding_cache.popitem(last=False)
+                return self._post_padding_cache[n]
         raise RuntimeError("This is code line should not have been reached!")
         # If this case is reached, it probably means the last slice should be
         # returned, i.e.: return k1 + self.m_num - self.m_num_mid, q1 + 1
@@ -1805,7 +1817,6 @@ class ShortTimeFFT:
         self._lower_border_end = (0, max(self.p_min, 0))  # ends at first slice
         return self._lower_border_end
 
-    @lru_cache(maxsize=256)
     def upper_border_begin(self, n: int) -> tuple[int, int]:
         """First signal index and first slice index affected by post-padding.
 
@@ -1838,6 +1849,10 @@ class ShortTimeFFT:
         p_range: Determine and validate slice index range.
         ShortTimeFFT: Class this method belongs to.
         """
+        # The last 256 calls are cached in attribute `self._upper_border_begin_cache`.
+        if n in self._upper_border_begin_cache:  # try to use cached value
+            self._upper_border_begin_cache.move_to_end(n)
+            return self._upper_border_begin_cache[n]
         if not (n >= (m2p := self.m_num - self.m_num_mid)):
             raise ValueError(f"Parameter n must be >= ceil(m_num/2) = {m2p}!")
         w2 = self.win.real**2 + self.win.imag**2
@@ -1847,8 +1862,16 @@ class ShortTimeFFT:
         for q_ in range(q2, q1, -1):
             k_ = q_ * self.hop + (self.m_num - self.m_num_mid)
             if k_ <= n or all(w2[n-k_:] == 0):
-                return (q_ + 1) * self.hop - self.m_num_mid, q_ + 1
-        return 0, 0  # border starts at first slice
+                return_value = ((q_ + 1) * self.hop - self.m_num_mid, q_ + 1)
+                self._upper_border_begin_cache[n] = return_value
+                # remove the oldest cache item:
+                if len(self._upper_border_begin_cache) > 256:
+                    self._upper_border_begin_cache.popitem(last=False)
+                return return_value
+        # To make the linter happy:
+        raise RuntimeError("This line should not be reached - please file a bug!")
+
+
 
     @property
     def delta_t(self) -> float:
@@ -1916,7 +1939,6 @@ class ShortTimeFFT:
                              f"does not hold for signal length {n=}!")
         return p0_, p1_
 
-    @lru_cache(maxsize=1)
     def t(self, n: int, p0: int | None = None, p1: int | None = None,
           k_offset: int = 0) -> np.ndarray:
         """Times of STFT for an input signal with `n` samples.
@@ -1948,8 +1970,17 @@ class ShortTimeFFT:
         fs: Sampling frequency (being ``1/T``)
         ShortTimeFFT: Class this method belongs to.
         """
+        # The last 8 calls are cached in the attribute `self._t_cache`.
+        args = (n, p0, p1, k_offset)
+        if args in self._t_cache:  # try to use cached value
+            self._t_cache.move_to_end(args)
+            return self._t_cache[(n, p0, p1, k_offset)]
         p0, p1 = self.p_range(n, p0, p1)
-        return np.arange(p0, p1) * self.delta_t + k_offset * self.T
+        self._t_cache[args] = np.arange(p0, p1) * self.delta_t + k_offset * self.T
+        if len(self._t_cache) > 8:  # remove the oldest cache item
+            self._t_cache.popitem(last=False)
+
+        return self._t_cache[args]
 
     def nearest_k_p(self, k: int, left: bool = True) -> int:
         """Return nearest sample index k_p for which t[k_p] == t[p] holds.

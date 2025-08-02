@@ -18,6 +18,7 @@ Notes
   incorrectly (but the code works), hence a ``type: ignore`` was appended.
 """
 import math
+from collections import OrderedDict
 from itertools import product
 from types import GenericAlias
 from typing import cast, get_args, Literal
@@ -528,15 +529,19 @@ def test_border_values():
     assert SFT.p_min == 0
     assert SFT.k_min == -4
     assert SFT.lower_border_end == (4, 1)
-    assert SFT.lower_border_end == (4, 1)  # needed to test caching
+    assert SFT.lower_border_end == (4, 1)  # second call needed to test caching
     assert SFT.p_max(10) == 4
     assert SFT.k_max(10) == 16
     assert SFT.upper_border_begin(10) == (4, 2)
+    assert SFT.upper_border_begin(10) == (4, 2)  # second call needed to test caching
     # Raise exceptions:
     with pytest.raises(ValueError, match="^Parameter n must be"):
         SFT.upper_border_begin(3)
     with pytest.raises(ValueError, match="^Parameter n must be"):
         SFT._post_padding(3)
+    with pytest.raises(RuntimeError):
+        SFT._hop = -1  # illegal hop interval
+        SFT.upper_border_begin(5)
 
 def test_border_values_exotic():
     """Ensure that the border calculations are correct for windows with
@@ -544,6 +549,7 @@ def test_border_values_exotic():
     w = np.array([0, 0, 0, 0, 0, 0, 0, 1.])
     SFT = ShortTimeFFT(w, hop=1, fs=1)
     assert SFT.lower_border_end == (0, 0)
+    assert SFT.lower_border_end == (0, 0)  # test again to verify caching
 
     SFT = ShortTimeFFT(np.flip(w), hop=20, fs=1)
     assert SFT.upper_border_begin(4) == (16, 1)
@@ -557,6 +563,29 @@ def test_border_values_exotic():
         _ = SFT.k_max(4)
     with pytest.raises(RuntimeError):
         _ = SFT.k_min
+
+
+def test_post_padding_cache():
+    """Very that correct values are cached and removed in `_post_padding`. """
+    SFT = ShortTimeFFT(np.ones(4), hop=2, fs=1)
+    # fill cache:
+    dd = OrderedDict({n_: SFT._post_padding(n_) for n_ in range(4, 4+257)})
+    SFT._post_padding(10)  # probe cached valued
+    dd.move_to_end(10)
+    dd.popitem(last=False)  # remove the oldest entry since cache size is 256
+    assert SFT._post_padding_cache == dd
+
+
+def test_upper_border_begin_cache():
+    """Very that correct values are cached and removed in `_post_padding`. """
+    SFT = ShortTimeFFT(np.ones(4), hop=2, fs=1)
+    # fill cache:
+    dd = OrderedDict({n_: SFT.upper_border_begin(n_) for n_ in range(4, 4+257)})
+    dd.popitem(last=False)  # remove the oldest entry since cache size is 256
+    SFT.upper_border_begin(10)  # probe cached valued
+    dd.move_to_end(10)
+
+    assert SFT._upper_border_begin_cache == dd
 
 
 def test_t():
@@ -574,6 +603,20 @@ def test_t():
     SFT.fs = 1/8
     assert SFT.fs == 1/8
     assert SFT.T == 8
+
+
+def test_t_cache():
+    """Very that correct values are cached and removed in `t()`. """
+    SFT = ShortTimeFFT(np.ones(8), hop=4, fs=1)
+    # fill cache:
+    dd = OrderedDict({(64, p_, p_+2, 0): SFT.t(64, p_, p_+2, 0) for p_ in range(9)})
+    # probe cached value:
+    args = (64, 2, 4, 0)
+    SFT.t(*args)
+    dd.move_to_end(args)
+    dd.popitem(last=False) # remove the oldest entry since cache size is 8
+
+    assert SFT._t_cache == dd
 
 
 @pytest.mark.parametrize('fft_mode, f',
