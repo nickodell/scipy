@@ -453,6 +453,9 @@ class ShortTimeFFT:
             self.scale_to(scale_to)
 
         self.fft_mode, self.phase_shift = fft_mode, phase_shift
+        self._post_padding = lru_cache(maxsize=256)(self.__post_padding)
+        self.upper_border_begin = lru_cache(maxsize=256)(self._upper_border_begin)
+        self.t = lru_cache(maxsize=1)(self._t)
 
     @classmethod
     def from_dual(cls, dual_win: np.ndarray, hop: int, fs: float, *,
@@ -1677,8 +1680,7 @@ class ShortTimeFFT:
         """
         return self._pre_padding[1]
 
-    @lru_cache(maxsize=256)
-    def _post_padding(self, n: int) -> tuple[int, int]:
+    def __post_padding(self, n: int) -> tuple[int, int]:
         """Largest signal index and slice index due to padding.
 
         Parameters
@@ -1805,8 +1807,7 @@ class ShortTimeFFT:
         self._lower_border_end = (0, max(self.p_min, 0))  # ends at first slice
         return self._lower_border_end
 
-    @lru_cache(maxsize=256)
-    def upper_border_begin(self, n: int) -> tuple[int, int]:
+    def _upper_border_begin(self, n: int) -> tuple[int, int]:
         """First signal index and first slice index affected by post-padding.
 
         Describes the point where the window does begin stick out to the right
@@ -1916,8 +1917,7 @@ class ShortTimeFFT:
                              f"does not hold for signal length {n=}!")
         return p0_, p1_
 
-    @lru_cache(maxsize=1)
-    def t(self, n: int, p0: int | None = None, p1: int | None = None,
+    def _t(self, n: int, p0: int | None = None, p1: int | None = None,
           k_offset: int = 0) -> np.ndarray:
         """Times of STFT for an input signal with `n` samples.
 
