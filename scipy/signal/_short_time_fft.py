@@ -20,7 +20,7 @@
 # Provides typing union operator ``|`` in Python 3.9:
 # Linter does not allow to import ``Generator`` from ``typing`` module:
 from collections.abc import Generator, Callable
-from functools import lru_cache, partial, cached_property
+from functools import partial, cached_property
 from types import GenericAlias
 from typing import get_args, Literal
 
@@ -419,7 +419,11 @@ class ShortTimeFFT:
     # attributes for caching calculated values:
     _fac_mag: float | None = None
     _fac_psd: float | None = None
+    _post_padding_last_val: tuple[int, tuple[int, int]]  = 0, (0, 0)
     _lower_border_end: tuple[int, int] | None = None
+    _upper_border_begin_last_val: tuple[int, tuple[int, int]]  = 0, (0, 0)
+    _t_last_val: tuple[tuple[int, int | None, int | None, int], np.ndarray] = \
+        (0, None, None, 0), np.empty(0)
 
     # generic type compatibility with scipy-stubs
     __class_getitem__ = classmethod(GenericAlias)
@@ -1677,7 +1681,6 @@ class ShortTimeFFT:
         """
         return self._pre_padding[1]
 
-    @lru_cache(maxsize=256)
     def _post_padding(self, n: int) -> tuple[int, int]:
         """Largest signal index and slice index due to padding.
 
@@ -1686,6 +1689,8 @@ class ShortTimeFFT:
         n : int
             Number of samples of input signal (must be ≥ half of the window length).
         """
+        if self._post_padding_last_val[0] == n and n > 0:
+            return self._post_padding_last_val[1]  # return last calculated value
         if not (n >= (m2p := self.m_num - self.m_num_mid)):
             raise ValueError(f"Parameter n must be >= ceil(m_num/2) = {m2p}!")
         w2 = self.win.real**2 + self.win.imag**2
@@ -1694,8 +1699,9 @@ class ShortTimeFFT:
         k1 = q1 * self.hop - self.m_num_mid
         for q_, k_ in enumerate(range(k1, n+self.m_num, self.hop), start=q1):
             n_next = k_ + self.hop
-            if n_next >= n or all(w2[:n-n_next] == 0):
-                return k_ + self.m_num, q_ + 1
+            if n_next >= n or all(w2[:n-n_next] == 0):  # cache return value
+                self._post_padding_last_val = (n, (k_ + self.m_num, q_ + 1))
+                return self._post_padding_last_val[1]
         raise RuntimeError("This is code line should not have been reached!")
         # If this case is reached, it probably means the last slice should be
         # returned, i.e.: return k1 + self.m_num - self.m_num_mid, q1 + 1
@@ -1805,7 +1811,6 @@ class ShortTimeFFT:
         self._lower_border_end = (0, max(self.p_min, 0))  # ends at first slice
         return self._lower_border_end
 
-    @lru_cache(maxsize=256)
     def upper_border_begin(self, n: int) -> tuple[int, int]:
         """First signal index and first slice index affected by post-padding.
 
@@ -1838,6 +1843,8 @@ class ShortTimeFFT:
         p_range: Determine and validate slice index range.
         ShortTimeFFT: Class this method belongs to.
         """
+        if self._upper_border_begin_last_val[0] == n and n > 0:
+            return self._upper_border_begin_last_val[1]  # return last calculated value
         if not (n >= (m2p := self.m_num - self.m_num_mid)):
             raise ValueError(f"Parameter n must be >= ceil(m_num/2) = {m2p}!")
         w2 = self.win.real**2 + self.win.imag**2
@@ -1847,8 +1854,12 @@ class ShortTimeFFT:
         for q_ in range(q2, q1, -1):
             k_ = q_ * self.hop + (self.m_num - self.m_num_mid)
             if k_ <= n or all(w2[n-k_:] == 0):
-                return (q_ + 1) * self.hop - self.m_num_mid, q_ + 1
-        return 0, 0  # border starts at first slice
+                return_value = (q_ + 1) * self.hop - self.m_num_mid, q_ + 1
+                self._upper_border_begin_last_val = (n, return_value)  # cache value
+                return return_value
+        # To make the linter happy:
+        raise RuntimeError("This line should not be reached - please file a bug!")
+
 
     @property
     def delta_t(self) -> float:
@@ -1916,7 +1927,6 @@ class ShortTimeFFT:
                              f"does not hold for signal length {n=}!")
         return p0_, p1_
 
-    @lru_cache(maxsize=1)
     def t(self, n: int, p0: int | None = None, p1: int | None = None,
           k_offset: int = 0) -> np.ndarray:
         """Times of STFT for an input signal with `n` samples.
@@ -1948,8 +1958,13 @@ class ShortTimeFFT:
         fs: Sampling frequency (being ``1/T``)
         ShortTimeFFT: Class this method belongs to.
         """
+        args = n, p0, p1, k_offset
+        if self._t_last_val[0] == args and n > 0:
+            return self._t_last_val[1]  # return last calculated array
         p0, p1 = self.p_range(n, p0, p1)
-        return np.arange(p0, p1) * self.delta_t + k_offset * self.T
+        t = np.arange(p0, p1) * self.delta_t + k_offset * self.T
+        self._t_last_val = args, t  # cache return value
+        return t
 
     def nearest_k_p(self, k: int, left: bool = True) -> int:
         """Return nearest sample index k_p for which t[k_p] == t[p] holds.

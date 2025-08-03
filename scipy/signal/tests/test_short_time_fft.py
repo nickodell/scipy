@@ -528,15 +528,19 @@ def test_border_values():
     assert SFT.p_min == 0
     assert SFT.k_min == -4
     assert SFT.lower_border_end == (4, 1)
-    assert SFT.lower_border_end == (4, 1)  # needed to test caching
+    assert SFT.lower_border_end == (4, 1)  # second call needed to test caching
     assert SFT.p_max(10) == 4
     assert SFT.k_max(10) == 16
     assert SFT.upper_border_begin(10) == (4, 2)
+    assert SFT.upper_border_begin(10) == (4, 2)  # second call needed to test caching
     # Raise exceptions:
     with pytest.raises(ValueError, match="^Parameter n must be"):
         SFT.upper_border_begin(3)
     with pytest.raises(ValueError, match="^Parameter n must be"):
         SFT._post_padding(3)
+    with pytest.raises(RuntimeError):
+        SFT._hop = -1  # illegal hop interval
+        SFT.upper_border_begin(5)
 
 def test_border_values_exotic():
     """Ensure that the border calculations are correct for windows with
