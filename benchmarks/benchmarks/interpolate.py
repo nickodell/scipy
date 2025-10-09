@@ -397,23 +397,25 @@ class RegularGridInterpolatorValues(interpolate.RegularGridInterpolator):
 
 class RegularGridInterpolatorSubclass(Benchmark):
     """
-    Benchmark RegularGridInterpolator with method="linear".
+    Benchmark RegularGridInterpolator with many methods.
     """
-    param_names = ['ndim', 'max_coord_size', 'n_samples', 'flipped']
+    param_names = ['ndim', 'max_coord_size', 'n_samples', 'flipped', 'method']
     params = [
         [2, 3, 4],
         [10, 40, 200],
         [10, 100, 1000, 10000],
-        [1, -1]
+        [1, -1],
+        ['slinear', 'cubic', 'quintic']
     ]
 
-    def setup(self, ndim, max_coord_size, n_samples, flipped):
+    def setup(self, ndim, max_coord_size, n_samples, flipped, method):
         rng = np.random.default_rng(314159)
 
         # coordinates halve in size over the dimensions
         coord_sizes = [max_coord_size // 2**i for i in range(ndim)]
         self.points = [np.sort(rng.random(size=s))[::flipped]
                        for s in coord_sizes]
+        self.method = method
         self.values = rng.random(size=coord_sizes)
 
         # choose in-bounds sample points xi
@@ -422,20 +424,13 @@ class RegularGridInterpolatorSubclass(Benchmark):
               for low, high in bounds]
         self.xi = np.array(xi).T
 
-        self.interp = RegularGridInterpolatorValues(
-            self.points,
-            self.xi,
-        )
-
     def time_rgi_setup_interpolator(self, ndim, max_coord_size,
-                                    n_samples, flipped):
+                                    n_samples, flipped, method):
         self.interp = RegularGridInterpolatorValues(
             self.points,
             self.xi,
+            method=self.method,
         )
-
-    def time_rgi(self, ndim, max_coord_size, n_samples, flipped):
-        self.interp(self.values)
 
 
 class CloughTocherInterpolatorValues(interpolate.CloughTocher2DInterpolator):
