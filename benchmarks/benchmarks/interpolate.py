@@ -413,6 +413,13 @@ class RegularGridInterpolatorSubclass(Benchmark):
 
         # coordinates halve in size over the dimensions
         coord_sizes = [max_coord_size // 2**i for i in range(ndim)]
+        min_coord_size = {
+            'slinear': 2,
+            'cubic': 4,
+            'quintic': 6,
+        }
+        if min(coord_sizes) < min_coord_size[method]:
+            raise NotImplementedError()
         self.points = [np.sort(rng.random(size=s))[::flipped]
                        for s in coord_sizes]
         self.method = method
