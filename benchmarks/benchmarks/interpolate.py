@@ -401,9 +401,9 @@ class RegularGridInterpolatorSubclass(Benchmark):
     """
     param_names = ['ndim', 'max_coord_size', 'n_samples', 'flipped', 'method']
     params = [
-        [2, 3, 4],
-        [10, 40, 200],
-        [10, 100, 1000, 10000],
+        [2],
+        [20, 40, 100, 1000],
+        [10],
         [1, -1],
         ['slinear', 'cubic', 'quintic']
     ]
@@ -433,11 +433,59 @@ class RegularGridInterpolatorSubclass(Benchmark):
 
     def time_rgi_setup_interpolator(self, ndim, max_coord_size,
                                     n_samples, flipped, method):
-        self.interp = RegularGridInterpolatorValues(
+        #self.interp = RegularGridInterpolatorValues(
+        self.interp = interpolate.RegularGridInterpolator(
             self.points,
             self.xi,
             method=self.method,
         )
+
+
+class RGIFitOnly(Benchmark):
+    """
+    Benchmark RegularGridInterpolator with multiple methods, using
+    only spline fit
+    """
+    param_names = ['ndim', 'n_samples', 'method']
+    params = [
+        [2],
+        [10, 40, 100, 200, 400, 600, 800, 1000],
+        ['slinear', 'cubic']
+    ]
+    timeout = 300
+
+    def setup(self, ndim, n_samples, method):
+        rng = np.random.default_rng(314159)
+
+        self.points = [np.sort(rng.random(size=n_samples))
+                       for _ in range(ndim)]
+        self.points = np.array(self.points)
+        self.values = rng.random(size=[n_samples]*ndim)
+
+        # choose in-bounds sample points xi
+        bounds = [(p.min(), p.max()) for p in self.points]
+        xi = [rng.uniform(low, high, size=n_samples)
+              for low, high in bounds]
+        self.xi = np.array(xi).T
+
+        print(method, self.points.shape, self.values.shape)
+        #self.interp = interpolate.RegularGridInterpolator(
+        #    self.points,
+        #    self.values,
+        #    method=method
+        #)
+
+    def time_rgi_setup_interpolator(self, ndim, n_samples, method):
+        self.interp = interpolate.RegularGridInterpolator(
+            self.points,
+            self.values,
+            method=method,
+            solver_args=dict(
+                maxiter=10000,
+                atol=1e-1,
+            ),
+        )
+
 
 
 class CloughTocherInterpolatorValues(interpolate.CloughTocher2DInterpolator):
