@@ -9,6 +9,7 @@ matplotlib>=3.5
 numpydoc
 jupytext
 myst-nb>=1.2.0
+click<8.3.0
 pooch
 jupyterlite-sphinx>=0.19.1
 jupyterlite-pyodide-kernel
