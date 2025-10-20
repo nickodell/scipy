@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - maintenance/**
+      - njo-dfh
   pull_request:
     branches:
       - main
