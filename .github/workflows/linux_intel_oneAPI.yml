@@ -55,6 +55,9 @@ jobs:
           path: |
               /opt/intel/oneapi/
           key: install-${{ env.LINUX_CPPKIT_URL }}-${{ env.LINUX_FORTRANKIT_URL }}-${{ env.LINUX_HPCKIT_URL }}-compiler
+      - name: Show disk
+        run: |
+          df -h
       - name: Install oneAPI CPP kit
         if: steps.cache-install.outputs.cache-hit != 'true'
         run: |
@@ -70,6 +73,9 @@ jobs:
         run: |
           printenv LINUX_HPCKIT_URL
           bash tools/install_intel_oneAPI_linux.sh $LINUX_HPCKIT_URL
+      - name: Show disk
+        run: |
+          df -h
 
       - name: Setup Conda
         uses: conda-incubator/setup-miniconda@505e6394dae86d6a5c7fbb6e3fb8938e3e863830 # v3.1.1
@@ -82,12 +88,18 @@ jobs:
           miniforge-variant: Miniforge3
           miniforge-version: latest
           use-mamba: true
+      - name: Show disk
+        run: |
+          df -h
 
       - name: Update Conda Environment
         shell: bash -l {0}
         run: |
           conda activate scipy-dev
           conda install -c conda-forge pkg-config meson meson-python ninja numpy cython pybind11 pytest pytest-xdist pytest-timeout pooch hypothesis spin "click<8.3.0"
+      - name: Show disk
+        run: |
+          df -h
 
       - name: Initialise Intel oneAPI and Build SciPy
         shell: bash -l {0}
@@ -100,6 +112,9 @@ jobs:
           pip install pythran
           unset FFLAGS
           CC=icx CXX=icpx FC=ifx spin build -- -Dblas=mkl-dynamic-lp64-iomp -Dlapack=mkl-dynamic-lp64-iomp
+      - name: Show disk
+        run: |
+          df -h
 
       - name: Test scipy
         shell: bash -l {0}
@@ -107,3 +122,7 @@ jobs:
           . /opt/intel/oneapi/setvars.sh --force
           conda activate scipy-dev
           spin test
+
+      - name: Show disk
+        run: |
+          df -h
