@@ -886,35 +886,36 @@ class TestNBinom:
 
 
 class TestGenInvGauss:
-    def setup_method(self):
-        self.rng = np.random.default_rng(6473281180)
-
     @pytest.mark.slow
     def test_rvs_with_mode_shift(self):
+        rng = np.random.default_rng(6473281180)
         # ratio_unif w/ mode shift
         gig = stats.geninvgauss(2.3, 1.5)
-        _, p = stats.kstest(gig.rvs(size=1500, random_state=self.rng), gig.cdf)
+        _, p = stats.kstest(gig.rvs(size=1500, random_state=rng), gig.cdf)
         assert_equal(p > 0.05, True)
 
     @pytest.mark.slow
     def test_rvs_without_mode_shift(self):
+        rng = np.random.default_rng(6473281180)
         # ratio_unif w/o mode shift
         gig = stats.geninvgauss(0.9, 0.75)
-        _, p = stats.kstest(gig.rvs(size=1500, random_state=self.rng), gig.cdf)
+        _, p = stats.kstest(gig.rvs(size=1500, random_state=rng), gig.cdf)
         assert_equal(p > 0.05, True)
 
     @pytest.mark.slow
     def test_rvs_new_method(self):
+        rng = np.random.default_rng(6473281180)
         # new algorithm of Hoermann / Leydold
         gig = stats.geninvgauss(0.1, 0.2)
-        _, p = stats.kstest(gig.rvs(size=1500, random_state=self.rng), gig.cdf)
+        _, p = stats.kstest(gig.rvs(size=1500, random_state=rng), gig.cdf)
         assert_equal(p > 0.05, True)
 
     @pytest.mark.slow
     def test_rvs_p_zero(self):
+        rng = np.random.default_rng(6473281180)
         def my_ks_check(p, b):
             gig = stats.geninvgauss(p, b)
-            rvs = gig.rvs(size=1500, random_state=self.rng)
+            rvs = gig.rvs(size=1500, random_state=rng)
             return stats.kstest(rvs, gig.cdf)[1] > 0.05
         # boundary cases when p = 0
         assert_equal(my_ks_check(0, 0.2), True)  # new algo
@@ -5536,6 +5537,7 @@ class TestGumbelR:
                         rtol=1e-14)
 
 
+@pytest.mark.thread_unsafe("mutates global cdf_default_method")
 class TestLevyStable:
     def setup_method(self):
         self.rng = np.random.default_rng(7195199371)
