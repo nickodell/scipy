@@ -367,6 +367,7 @@ class TestQRVS:
     def test_QRVS_shape_consistency(self, qrng, size_in, size_out,
                                     d_in, d_out):
         gen = FastGeneratorInversion(stats.norm())
+        qrng = deepcopy(qrng)
 
         # If d and qrng.d are inconsistent, an error is raised
         if d_in is not None and qrng is not None and qrng.d != d_in:
