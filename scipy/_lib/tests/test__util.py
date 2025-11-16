@@ -570,6 +570,7 @@ class TestTransitionToRNG:
         return res.confidence_interval(method=method)
 
     @pytest.mark.fail_slow(10)
+    @pytest.mark.thread_unsafe("uses np.random.seed")
     @pytest.mark.slow
     @pytest.mark.parametrize("method, arg_name", [
         (kmeans, "seed"),
