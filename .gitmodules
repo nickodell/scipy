@@ -12,7 +12,7 @@
 	url = https://github.com/scipy/pocketfft
 [submodule "scipy/_lib/cobyqa"]
 	path = scipy/_lib/cobyqa
-	url = https://github.com/cobyqa/cobyqa.git
+	url = git@github.com:nickodell/cobyqa.git
 [submodule "scipy/_lib/array_api_extra"]
 	path = scipy/_lib/array_api_extra
 	url = https://github.com/data-apis/array-api-extra.git
