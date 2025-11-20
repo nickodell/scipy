@@ -1564,7 +1564,7 @@ class TestOptimizeSimple(CheckOptimize):
                                         'cobyqa', 'slsqp',
                                         'trust-constr', 'dogleg', 'trust-ncg',
                                         'trust-exact', 'trust-krylov'])
-    def test_nan_values(self, method, num_parallel_threads):
+    def test_nan_values(self, method):
 
         # Check nan values result to failed exit status
 
