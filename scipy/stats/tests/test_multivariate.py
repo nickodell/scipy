@@ -2959,7 +2959,7 @@ class TestOrthoGroup:
                     for _ in range(N)
                 ])
                 # Add a bit of noise to account for numeric accuracy.
-                stats += np.random.uniform(-eps, eps, size=stats.shape)
+                stats += rng.uniform(-eps, eps, size=stats.shape)
                 return stats
 
             expected = generate_test_statistics(random_ortho)
