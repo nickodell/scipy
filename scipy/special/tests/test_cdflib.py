@@ -300,6 +300,7 @@ class TestCDFlib:
              Arg(10, 1e100)],  # x
             rtol=1e-5)
 
+    @pytest.mark.thread_unsafe("unknown thread safety issue")
     def test_stdtr(self):
         # Ideally the left endpoint for Arg() should be 0.
         assert_mpmath_equal(
