@@ -216,6 +216,7 @@ class TestCDFlib:
             1, [IntArg(1, 1000), ProbArg(), ProbArg()],
             rtol=1e-4, endpt_atol=[None, None, 1e-6])
 
+    @pytest.mark.thread_unsafe("mpmath")
     def test_btdtria(self):
         _assert_inverts(
             sp.btdtria,
@@ -224,6 +225,7 @@ class TestCDFlib:
                 Arg(0, 1, inclusive_a=False, inclusive_b=False)],
             rtol=1e-12)
 
+    @pytest.mark.thread_unsafe("mpmath")
     def test_btdtrib(self):
         # Use small values of a or mpmath doesn't converge
         _assert_inverts(
@@ -315,6 +317,7 @@ class TestCDFlib:
             _student_t_cdf,
             0, [ProbArg(), Arg()], rtol=1e-7)
 
+    @pytest.mark.thread_unsafe("mpmath")
     def test_stdtrit(self):
         _assert_inverts(
             sp.stdtrit,
@@ -348,6 +351,7 @@ class TestCDFlib:
             2, [Arg(0, 100, inclusive_a=False), IntArg(1, 100), ProbArg()],
             n=1000, rtol=1e-4, atol=1e-15)
 
+    @pytest.mark.thread_unsafe("mpmath")
     def test_chndtrix(self):
         # Use a larger atol since mpmath is doing numerical integration
         _assert_inverts(

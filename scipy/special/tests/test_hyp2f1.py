@@ -2510,7 +2510,7 @@ class TestHyp2f1:
         assert_allclose(hyp2f1(a, b, c, z), expected, rtol=rtol)
 
     @pytest.mark.slow
-    @pytest.mark.thread_unsafe("unknown thread safety issue")
+    @pytest.mark.thread_unsafe("mpmath")
     @check_version(mpmath, "1.0.0")
     def test_test_hyp2f1(self):
         """Test that expected values match what is computed by mpmath.
