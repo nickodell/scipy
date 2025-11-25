@@ -448,6 +448,7 @@ class Elec:
 class TestTrustRegionConstr:
     list_of_problems = [Maratos(),
                         Maratos(constr_hess='2-point'),
+                        # Is SR1() object being shared causing crash?
                         Maratos(constr_hess=SR1()),
                         Maratos(constr_jac='2-point', constr_hess=SR1()),
                         MaratosGradInFunc(),
@@ -494,6 +495,7 @@ class TestTrustRegionConstr:
                               constraints=prob.constr)
 
         if prob.x_opt is not None:
+            print(result.x)
             assert_array_almost_equal(result.x, prob.x_opt,
                                       decimal=5)
             # gtol
