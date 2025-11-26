@@ -21,6 +21,7 @@ from scipy._lib._sparse import issparse
 from scipy._lib import xp_fastpath
 
 from numpy.exceptions import AxisError
+#import line_profiler
 
 
 np_long: type
@@ -1118,6 +1119,26 @@ def _find_core_batch_shapes(xp, arrays, ndims):
     return xp_fastpath.find_core_batch_shapes(xp, arrays, ndims)
 
 
+def _gather_array_args(args, names, kwargs, n_arrays):
+    args = list(args)
+
+    # Ensure all arrays in `arrays`, other arguments in `other_args`/`kwargs`
+    arrays, other_args = args[:n_arrays], args[n_arrays:]
+    for i, name in enumerate(names):
+        if name in kwargs:
+            if i + 1 <= len(args):
+                raise ValueError(f'{f.__name__}() got multiple values '
+                                 f'for argument `{name}`.')
+            else:
+                arrays.append(kwargs.pop(name))
+    return arrays, other_args
+
+
+def _apply_func(f, arrays, other_args, kwargs):
+    xp_fastpath.asdfzxcv()
+    return f(*arrays, *other_args, **kwargs)
+
+
 def _apply_over_batch(*argdefs):
     """
     Factory for decorator that applies a function over batched arguments.
@@ -1150,18 +1171,9 @@ def _apply_over_batch(*argdefs):
 
     def decorator(f):
         @functools.wraps(f)
+        #@line_profiler.profile
         def wrapper(*args, **kwargs):
-            args = list(args)
-
-            # Ensure all arrays in `arrays`, other arguments in `other_args`/`kwargs`
-            arrays, other_args = args[:n_arrays], args[n_arrays:]
-            for i, name in enumerate(names):
-                if name in kwargs:
-                    if i + 1 <= len(args):
-                        raise ValueError(f'{f.__name__}() got multiple values '
-                                         f'for argument `{name}`.')
-                    else:
-                        arrays.append(kwargs.pop(name))
+            arrays, other_args = _gather_array_args(args, names, kwargs, n_arrays)
 
             xp = array_namespace(*arrays)
 
@@ -1169,7 +1181,7 @@ def _apply_over_batch(*argdefs):
 
             # Early exit if call is not batched
             if not any(batch_shapes):
-                return f(*arrays, *other_args, **kwargs)
+                return _apply_func(f, arrays, other_args, kwargs)
 
             # Determine broadcasted batch shape
             batch_shape = np.broadcast_shapes(*batch_shapes)  # Gives OK error message

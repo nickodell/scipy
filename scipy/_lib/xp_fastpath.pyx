@@ -1,10 +1,14 @@
-# cython: profile=False
-# cython: linetrace=False
+# cython: profile=True
+# cython: linetrace=True
 cimport cython
 import numpy as np
 cimport numpy as cnp
 
 from scipy._lib.array_api_compat import numpy as numpy_namespace
+
+
+def asdfzxcv():
+    pass
 
 
 cdef bint is_numpy_namespace(xp):

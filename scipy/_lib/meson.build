@@ -109,7 +109,7 @@ py3.extension_module('messagestream',
 
 
 xp_fastpath_args = [
-    #'-DCYTHON_TRACE=1'
+    '-DCYTHON_TRACE=1'
 ]
 py3.extension_module('xp_fastpath',
   lib_cython_gen.process('xp_fastpath.pyx'),
