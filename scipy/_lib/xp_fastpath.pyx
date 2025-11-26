@@ -3,7 +3,6 @@
 cimport cython
 import numpy as np
 cimport numpy as cnp
-import line_profiler
 
 from scipy._lib.array_api_compat import numpy as numpy_namespace
 
