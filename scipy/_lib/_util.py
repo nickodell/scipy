@@ -18,6 +18,7 @@ from scipy._lib._array_api import (Array, array_namespace, is_lazy_array, is_num
                                    is_marray, xp_size, xp_result_device, xp_result_type)
 from scipy._lib._docscrape import FunctionDoc, Parameter
 from scipy._lib._sparse import issparse
+from scipy._lib import xp_fastpath
 
 from numpy.exceptions import AxisError
 
@@ -1161,19 +1162,7 @@ def _apply_over_batch(*argdefs):
 
             xp = array_namespace(*arrays)
 
-            # Determine core and batch shapes
-            batch_shapes = []
-            core_shapes = []
-            for i, (array, ndim) in enumerate(zip(arrays, ndims)):
-                array = None if array is None else xp.asarray(array)
-                shape = () if array is None else array.shape
-
-                if ndim == "1|2":  # special case for `solve`, etc.
-                    ndim = 2 if array.ndim >= 2 else 1
-
-                arrays[i] = array
-                batch_shapes.append(shape[:-ndim] if ndim > 0 else shape)
-                core_shapes.append(shape[-ndim:] if ndim > 0 else ())
+            batch_shapes, core_shapes = xp_fastpath.find_core_batch_shapes(xp, arrays, ndims)
 
             # Early exit if call is not batched
             if not any(batch_shapes):

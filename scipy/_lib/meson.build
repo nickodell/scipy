@@ -107,6 +107,15 @@ py3.extension_module('messagestream',
   subdir: 'scipy/_lib'
 )
 
+py3.extension_module('xp_fastpath',
+  lib_cython_gen.process('xp_fastpath.pyx'),
+  c_args: cython_c_args,
+  include_directories: 'src',
+  link_args: version_link_args,
+  install: true,
+  subdir: 'scipy/_lib'
+)
+
 python_sources = [
   '__init__.py',
   '_array_api.py',
