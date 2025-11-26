@@ -1114,6 +1114,9 @@ The documentation is written assuming array arguments are of specified
 as a batch of lower-dimensional slices; see :ref:`linalg_batch` for details.
 """
 
+def _find_core_batch_shapes(xp, arrays, ndims):
+    return xp_fastpath.find_core_batch_shapes(xp, arrays, ndims)
+
 
 def _apply_over_batch(*argdefs):
     """
@@ -1162,7 +1165,7 @@ def _apply_over_batch(*argdefs):
 
             xp = array_namespace(*arrays)
 
-            batch_shapes, core_shapes = xp_fastpath.find_core_batch_shapes(xp, arrays, ndims)
+            batch_shapes, core_shapes = _find_core_batch_shapes(xp, arrays, ndims)
 
             # Early exit if call is not batched
             if not any(batch_shapes):

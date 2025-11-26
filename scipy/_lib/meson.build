@@ -107,10 +107,15 @@ py3.extension_module('messagestream',
   subdir: 'scipy/_lib'
 )
 
+
+xp_fastpath_args = [
+    #'-DCYTHON_TRACE=1'
+]
 py3.extension_module('xp_fastpath',
   lib_cython_gen.process('xp_fastpath.pyx'),
-  c_args: cython_c_args,
+  c_args: cython_c_args + xp_fastpath_args,
   include_directories: 'src',
+  dependencies: np_dep,
   link_args: version_link_args,
   install: true,
   subdir: 'scipy/_lib'
