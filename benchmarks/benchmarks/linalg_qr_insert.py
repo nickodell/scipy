@@ -1,19 +1,13 @@
-import math
 
-import numpy.linalg as nl
 
 import numpy as np
-from numpy.testing import assert_
-from numpy.random import rand
 
 from .common import Benchmark, safe_import
 
 with safe_import():
-    import scipy.linalg as sl
     from scipy.linalg._decomp_update import qr_insert
     qr_insert_single = qr_insert.__wrapped__
 
-import numpy as np
 
 # Load data
 
