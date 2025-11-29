@@ -5,6 +5,7 @@ on:
 
 jobs:
   label_pull_request:
+    name: "Label PR on Close"
     # Permissions needed for labelling Pull Requests automatically
     # https://docs.github.com/en/actions/security-guides/automatic-token-authentication
     permissions:
