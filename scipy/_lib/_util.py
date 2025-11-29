@@ -18,8 +18,10 @@ from scipy._lib._array_api import (Array, array_namespace, is_lazy_array, is_num
                                    is_marray, xp_size, xp_result_device, xp_result_type)
 from scipy._lib._docscrape import FunctionDoc, Parameter
 from scipy._lib._sparse import issparse
+from scipy._lib import xp_fastpath
 
 from numpy.exceptions import AxisError
+#import line_profiler
 
 
 np_long: type
@@ -1113,6 +1115,29 @@ The documentation is written assuming array arguments are of specified
 as a batch of lower-dimensional slices; see :ref:`linalg_batch` for details.
 """
 
+def _find_core_batch_shapes(xp, arrays, ndims):
+    return xp_fastpath.find_core_batch_shapes(xp, arrays, ndims)
+
+
+def _gather_array_args(args, names, kwargs, n_arrays):
+    args = list(args)
+
+    # Ensure all arrays in `arrays`, other arguments in `other_args`/`kwargs`
+    arrays, other_args = args[:n_arrays], args[n_arrays:]
+    for i, name in enumerate(names):
+        if name in kwargs:
+            if i + 1 <= len(args):
+                raise ValueError(f'{f.__name__}() got multiple values '
+                                 f'for argument `{name}`.')
+            else:
+                arrays.append(kwargs.pop(name))
+    return arrays, other_args
+
+
+def _apply_func(f, arrays, other_args, kwargs):
+    xp_fastpath.asdfzxcv()
+    return f(*arrays, *other_args, **kwargs)
+
 
 def _apply_over_batch(*argdefs):
     """
@@ -1146,38 +1171,17 @@ def _apply_over_batch(*argdefs):
 
     def decorator(f):
         @functools.wraps(f)
+        #@line_profiler.profile
         def wrapper(*args, **kwargs):
-            args = list(args)
-
-            # Ensure all arrays in `arrays`, other arguments in `other_args`/`kwargs`
-            arrays, other_args = args[:n_arrays], args[n_arrays:]
-            for i, name in enumerate(names):
-                if name in kwargs:
-                    if i + 1 <= len(args):
-                        raise ValueError(f'{f.__name__}() got multiple values '
-                                         f'for argument `{name}`.')
-                    else:
-                        arrays.append(kwargs.pop(name))
+            arrays, other_args = _gather_array_args(args, names, kwargs, n_arrays)
 
             xp = array_namespace(*arrays)
 
-            # Determine core and batch shapes
-            batch_shapes = []
-            core_shapes = []
-            for i, (array, ndim) in enumerate(zip(arrays, ndims)):
-                array = None if array is None else xp.asarray(array)
-                shape = () if array is None else array.shape
-
-                if ndim == "1|2":  # special case for `solve`, etc.
-                    ndim = 2 if array.ndim >= 2 else 1
-
-                arrays[i] = array
-                batch_shapes.append(shape[:-ndim] if ndim > 0 else shape)
-                core_shapes.append(shape[-ndim:] if ndim > 0 else ())
+            batch_shapes, core_shapes = _find_core_batch_shapes(xp, arrays, ndims)
 
             # Early exit if call is not batched
             if not any(batch_shapes):
-                return f(*arrays, *other_args, **kwargs)
+                return _apply_func(f, arrays, other_args, kwargs)
 
             # Determine broadcasted batch shape
             batch_shape = np.broadcast_shapes(*batch_shapes)  # Gives OK error message
