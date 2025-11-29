@@ -200,4 +200,4 @@ PKG_CONFIG_PATH = "{project}"
 ]
 "Metrics" = [".spin/cmds.py:bench"]
 
-# foo 1
+# foo 2
