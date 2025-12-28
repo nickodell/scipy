@@ -129,7 +129,8 @@ void sf_error(const char *func_name, sf_error_t code, const char *fmt, ...) {
 }
 
 void sf_error_check_fpe(const char *func_name) {
-    int status = wrap_PyUFunc_getfperr();
+    //int status = wrap_PyUFunc_getfperr();
+    int status = 0;
     if (status & NPY_FPE_DIVIDEBYZERO) {
         sf_error(func_name, SF_ERROR_SINGULAR, "floating point division by zero");
     }

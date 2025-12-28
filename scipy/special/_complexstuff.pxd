@@ -12,6 +12,8 @@ from libc.math cimport (
 cdef extern from "npy_2_complexcompat.h":
     void NPY_CSETREAL(np.npy_cdouble *c, double real) nogil
     void NPY_CSETIMAG(np.npy_cdouble *c, double imag) nogil
+    double npy_creal(np.npy_cdouble z) nogil
+    double npy_cimag(np.npy_cdouble z) nogil
 
 cdef extern from "_complexstuff.h":
     double npy_cabs(np.npy_cdouble z) nogil
@@ -33,17 +35,22 @@ ctypedef union _complex_pun:
     np.npy_cdouble npy
     double_complex c99
 
+#complex<double> to_complex(npy_cdouble z) { return {npy_creal(z), npy_cimag(z)}; }
+
+#npy_cdouble to_ccomplex(complex<double> z) { return {z.real(), z.imag()}; }
 cdef inline np.npy_cdouble npy_cdouble_from_double_complex(
         double_complex x) noexcept nogil:
-    cdef _complex_pun z
-    z.c99 = x
-    return z.npy
+    cdef np.npy_cdouble ret
+    NPY_CSETREAL(&ret, x.real)
+    NPY_CSETIMAG(&ret, x.imag)
+    return ret
 
 cdef inline double_complex double_complex_from_npy_cdouble(
         np.npy_cdouble x) noexcept nogil:
-    cdef _complex_pun z
-    z.npy = x
-    return z.c99
+    cdef double_complex ret
+    ret.real = npy_creal(x)
+    ret.imag = npy_cimag(x)
+    return ret
 
 cdef inline bint zisnan(number_t x) noexcept nogil:
     if number_t is double_complex:

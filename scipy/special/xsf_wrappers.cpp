@@ -284,6 +284,7 @@ double special_loggamma(double x) { return xsf::loggamma(x); }
 
 npy_cdouble special_cloggamma(npy_cdouble z) { return to_ccomplex(xsf::loggamma(to_complex(z))); }
 
+
 npy_cdouble special_lambertw(npy_cdouble z, long k, double tol) {
     return to_ccomplex(xsf::lambertw(to_complex(z), k, tol));
 }

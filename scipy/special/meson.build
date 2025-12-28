@@ -183,13 +183,14 @@ py3.extension_module('_ellip_harm_2',
 
 py3.extension_module('cython_special',
   [
-    uf_cython_gen.process('cython_special.pyx'),
+    uf_cython_gen_cpp.process('cython_special.pyx'),
     '_cosine.c',
     'xsf_wrappers.cpp',
     'sf_error.cc',
     'dd_real_wrappers.cpp'
   ],
   c_args: [cython_c_args, Wno_maybe_uninitialized],
+  override_options : ['cython_language=cpp'],
   cpp_args: ['-DSP_SPECFUN_ERROR'],
   include_directories: ['..', '../_lib', '../_build_utils/src'],
   link_args: version_link_args,

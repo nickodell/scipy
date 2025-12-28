@@ -37,11 +37,11 @@ from libc.stdlib cimport malloc, free
 
 cdef extern from "lapack_defs.h":
     ctypedef int CBLAS_INT  # actual type defined in the header
-    void c_dstevr(char *jobz, char *range, CBLAS_INT *n, double *d, double *e,
-                  double *vl, double *vu, CBLAS_INT *il, CBLAS_INT *iu, double *abstol,
-                  CBLAS_INT *m, double *w, double *z, CBLAS_INT *ldz, CBLAS_INT *isuppz,
-                  double *work, CBLAS_INT *lwork, CBLAS_INT *iwork, CBLAS_INT *liwork,
-                  CBLAS_INT *info) nogil
+    #void c_dstevr(char *jobz, char *range, CBLAS_INT *n, double *d, double *e,
+    #              double *vl, double *vu, CBLAS_INT *il, CBLAS_INT *iu, double *abstol,
+    #              CBLAS_INT *m, double *w, double *z, CBLAS_INT *ldz, CBLAS_INT *isuppz,
+    #              double *work, CBLAS_INT *lwork, CBLAS_INT *iwork, CBLAS_INT *liwork,
+    #              CBLAS_INT *info) nogil
 
 
 @cython.wraparound(False)
@@ -162,8 +162,8 @@ cdef inline double* lame_coefficients(double h2, double k2, int n, int p,
     for i in range(0, size-1):
         dd[i] = g[i]*ss[i]/ss[i+1]
 
-    c_dstevr("V", "I", &size, d, dd, &vl, &vu, &tp, &tp, &tol, &c, w, eigv,
-             &size, isuppz, work, &lwork, iwork, &liwork, &info)
+    #c_dstevr("V", "I", &size, d, dd, &vl, &vu, &tp, &tp, &tol, &c, w, eigv,
+    #         &size, isuppz, work, &lwork, iwork, &liwork, &info)
 
     if info != 0:
         sf_error.error("ellip_harm", sf_error.MEMORY, "failed to allocate memory")

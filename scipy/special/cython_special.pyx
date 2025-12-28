@@ -1,3 +1,4 @@
+# distutils: language = c++
 """
 .. highlight:: cython
 
@@ -2918,6 +2919,8 @@ cpdef Dd_number_t loggamma(Dd_number_t x0) noexcept nogil:
     if Dd_number_t is double:
         return special_loggamma(x0)
     elif Dd_number_t is double_complex:
+
+
         return _complexstuff.double_complex_from_npy_cdouble(special_cloggamma(_complexstuff.npy_cdouble_from_double_complex(x0)))
     else:
         if Dd_number_t is double_complex:
