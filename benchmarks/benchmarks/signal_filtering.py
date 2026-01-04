@@ -4,9 +4,9 @@ from concurrent.futures import ThreadPoolExecutor, wait
 
 from .common import Benchmark, safe_import
 
-with safe_import():
-    from scipy.signal import (lfilter, firwin, decimate, butter, sosfilt,
+from scipy.signal import (lfilter, firwin, decimate, butter, sosfilt,
                               medfilt2d, freqz)
+from scipy.signal import lfilter_zi
 
 
 class Decimate(Benchmark):
@@ -45,6 +45,16 @@ class Lfilter(Benchmark):
 
     def time_lfilter(self, n_samples, numtaps):
         lfilter(self.coeff, 1.0, self.sig)
+
+class LfilterZi(Benchmark):
+    param_names = ['order']
+    params = [
+        [10, 20, 100]
+    ]
+    def time_lfilter_zi(self, order):
+        b = np.arange(1, order + 1)
+        a = np.arange(1, order + 1)
+        lfilter_zi(b, a)
 
 class ParallelSosfilt(Benchmark):
     timeout = 100
