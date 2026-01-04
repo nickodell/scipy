@@ -33,6 +33,7 @@ from scipy._lib._array_api import (
 )
 from scipy._lib.array_api_compat import is_array_api_obj
 import scipy._lib.array_api_extra as xpx
+import mpmath
 
 
 __all__ = ['correlate', 'correlation_lags', 'correlate2d',
@@ -4442,6 +4443,151 @@ def lfilter_zi(b, a):
     # `xp.cumulative_sum((b - y_inf*a)[::-1])[-2::-1]` does not work in torch due to
     # unsupported slicing with a negative step index. Hence, `flip` is used:
     return xp.flip(xp.cumulative_sum(xp.flip(b - y_inf*a)))[1:]
+
+
+
+
+
+def lfilter_zi_main_impl(b, a):
+    xp = array_namespace(b, a)
+
+    # FIXME: Can this function be replaced with an appropriate
+    # use of lfiltic?  For example, when b,a = butter(N,Wn),
+    #    lfiltic(b, a, y=numpy.ones_like(a), x=numpy.ones_like(b)).
+    #
+
+    # We could use scipy.signal.normalize, but it uses warnings in
+    # cases where a ValueError is more appropriate, and it allows
+    # b to be 2D.
+    b = xpx.atleast_nd(xp.asarray(b), ndim=1, xp=xp)
+    if b.ndim != 1:
+        raise ValueError("Numerator b must be 1-D.")
+    a = xpx.atleast_nd(xp.asarray(a), ndim=1, xp=xp)
+    if a.ndim != 1:
+        raise ValueError("Denominator a must be 1-D.")
+
+    while a.shape[0] > 1 and a[0] == 0.0:
+        a = a[1:]
+    if xp_size(a) < 1:
+        raise ValueError("There must be at least one nonzero `a` coefficient.")
+
+    if a[0] != 1.0:
+        # Normalize the coefficients so a[0] == 1.
+        b = b / a[0]
+        a = a / a[0]
+
+    n = max(a.shape[0], b.shape[0])
+
+    # Pad a or b with zeros so they are the same length.
+    if a.shape[0] < n:
+        a = xp.concat((a, xp.zeros(n - a.shape[0], dtype=a.dtype)))
+    elif b.shape[0] < n:
+        b = xp.concat((b, xp.zeros(n - b.shape[0], dtype=b.dtype)))
+
+    dt = xp.result_type(a, b)
+    IminusA = np.eye(n - 1) - linalg.companion(a).T
+    IminusA = xp.asarray(IminusA, dtype=dt)
+    #print(IminusA)
+    #print("cond", np.linalg.cond(IminusA))
+    B = b[1:] - a[1:] * b[0]
+    #print("rhs")
+    #print(b[1:])
+    #print(a[1:])
+    #print(b[0])
+    #print(B)
+    # Solve zi = A*zi + B
+    zi = xp.linalg.solve(IminusA, B)
+
+    # For future reference: we could also use the following
+    # explicit formulas to solve the linear system:
+    #
+    # zi = np.zeros(n - 1)
+    # zi[0] = B.sum() / IminusA[:,0].sum()
+    # asum = 1.0
+    # csum = 0.0
+    # for k in range(1,n-1):
+    #     asum += a[k]
+    #     csum += b[k] - a[k]*b[0]
+    #     zi[k] = asum*zi[0] - csum
+
+    return zi
+
+
+def mpmath_cast(array):
+    return np.vectorize(mpmath.mpf)(array)
+
+
+
+def lfilter_zi_mpmath(b, a):
+    xp = array_namespace(b, a)
+
+    # FIXME: Can this function be replaced with an appropriate
+    # use of lfiltic?  For example, when b,a = butter(N,Wn),
+    #    lfiltic(b, a, y=numpy.ones_like(a), x=numpy.ones_like(b)).
+    #
+
+    # We could use scipy.signal.normalize, but it uses warnings in
+    # cases where a ValueError is more appropriate, and it allows
+    # b to be 2D.
+    b = xpx.atleast_nd(xp.asarray(b), ndim=1, xp=xp)
+    if b.ndim != 1:
+        raise ValueError("Numerator b must be 1-D.")
+    a = xpx.atleast_nd(xp.asarray(a), ndim=1, xp=xp)
+    if a.ndim != 1:
+        raise ValueError("Denominator a must be 1-D.")
+
+    while a.shape[0] > 1 and a[0] == 0.0:
+        a = a[1:]
+    if xp_size(a) < 1:
+        raise ValueError("There must be at least one nonzero `a` coefficient.")
+
+    if a[0] != 1.0:
+        # Normalize the coefficients so a[0] == 1.
+        b = b / a[0]
+        a = a / a[0]
+
+    n = max(a.shape[0], b.shape[0])
+
+    # Pad a or b with zeros so they are the same length.
+    if a.shape[0] < n:
+        a = xp.concat((a, xp.zeros(n - a.shape[0], dtype=a.dtype)))
+    elif b.shape[0] < n:
+        b = xp.concat((b, xp.zeros(n - b.shape[0], dtype=b.dtype)))
+
+    dt = xp.result_type(a, b)
+    a = mpmath_cast(a)
+    b = mpmath_cast(b)
+    #IminusA = np.eye(n - 1) - linalg.companion(a).T
+    #IminusA = xp.asarray(IminusA, dtype=dt)
+    IminusA = np.zeros((n - 1, n - 1)).astype('float64').astype('object')
+    for i in range(n - 1):
+        IminusA[i, 0] += float(a[i + 1])
+        IminusA[i, i] += 1
+    for i in range(n - 2):
+        IminusA[i, i + 1] -= 1
+    B = b[1:] - a[1:] * b[0]
+    # Solve zi = A*zi + B
+    #zi = xp.linalg.solve(IminusA, B)
+    zi = mpmath.lu_solve(IminusA, B)
+    zi = np.array([float(e) for e in zi], dtype='float64')
+
+    # For future reference: we could also use the following
+    # explicit formulas to solve the linear system:
+    #
+    # zi = np.zeros(n - 1)
+    # zi[0] = B.sum() / IminusA[:,0].sum()
+    # asum = 1.0
+    # csum = 0.0
+    # for k in range(1,n-1):
+    #     asum += a[k]
+    #     csum += b[k] - a[k]*b[0]
+    #     zi[k] = asum*zi[0] - csum
+
+    return zi
+
+
+
+
 
 def sosfilt_zi(sos):
     """
