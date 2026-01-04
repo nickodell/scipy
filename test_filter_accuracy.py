@@ -45,12 +45,12 @@ def gen_random():
     a = np.random.normal(size=20)
     return b, a
 
-def test_lfilter_accuracy(generate_func):
+def test_lfilter_accuracy(generate_func, N):
     old_err = []
     new_err = []
     inputs = []
     start = time.time()
-    for i in tqdm(range(1000)):
+    for i in tqdm(range(N)):
         #a = np.random.normal(size=10)
         #b = np.random.normal(size=10)
         #coeff_scale = np.arange(1, 11)
@@ -95,11 +95,11 @@ def display_error(df):
 
 def main():
     print("random")
-    df = test_lfilter_accuracy(gen_random)
+    df = test_lfilter_accuracy(gen_random, 5000)
     display_error(df)
 
     print("butterworth")
-    df = test_lfilter_accuracy(gen_butterworth)
+    df = test_lfilter_accuracy(gen_butterworth, 50000)
     display_error(df)
 
 if __name__ == "__main__":
