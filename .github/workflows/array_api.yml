@@ -3,6 +3,7 @@ name: Array API
 on:
   push:
     branches:
+      - main
       - maintenance/**
   pull_request:
     branches:
@@ -15,6 +16,12 @@ permissions:
 env:
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
   CCACHE_MAXSIZE: "250M"
+  # Enable persistent cache
+  # https://docs.jax.dev/en/latest/config_options.html
+  JAX_COMPILATION_CACHE_DIR: "${{ github.workspace }}/.cache/scipy_jax_cache"
+  # JAX_DEBUG_LOG_MODULES: "jax._src.compiler,jax._src.lru_cache"
+  # Minimum compile time to store entry to cache
+  JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS: "0"
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
@@ -57,6 +64,15 @@ jobs:
           workflow_name: ${{ github.workflow }}
           job_name: ${{ github.job }}
 
+      - name: Cache JAX kernels
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684
+        with:
+          path: ${{ env.JAX_COMPILATION_CACHE_DIR }}
+          # Same as for cupy above
+          key: ${{ runner.os }}-gpu-jax-${{ github.run_id }}
+          restore-keys: |
+            ${{ runner.os }}-gpu-jax
+
       - name: Build
         run: pixi run build-cpu
 
@@ -64,7 +80,7 @@ jobs:
         run: |
           export OMP_NUM_THREADS=2
           for task in ${{ join(matrix.tasks, ' ') }}; do
-            pixi run --skip-deps "$task" -s signal -- --durations 3 --timeout=60
+            pixi run --skip-deps "$task" -s signal -j 2 -- --durations 3 --timeout=60 --capture=no
           done
 
       - name: Ccache performance
