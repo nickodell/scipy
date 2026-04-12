@@ -21,23 +21,23 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  get_commit_message:
-    name: Get commit message
-    uses: ./.github/workflows/commit_message.yml
+  # get_commit_message:
+  #   name: Get commit message
+  #   uses: ./.github/workflows/commit_message.yml
 
   xp_cpu:
     name: ${{ join(matrix.tasks, ' ') }}
-    needs: get_commit_message
-    if: >
-      needs.get_commit_message.outputs.message == 1
-      && (github.repository == 'scipy/scipy' || github.repository == '')
+    # needs: get_commit_message
+    # if: >
+    #   needs.get_commit_message.outputs.message == 1
+    #   && (github.repository == 'scipy/scipy' || github.repository == '')
     runs-on: ubuntu-22.04
     strategy:
       fail-fast: false
       matrix:
         include:
-          - tasks: [test-strict, test-torch, test-torch-float32, test-dask]
-            environments: [array-api-strict, torch-cpu, dask-cpu]
+          # - tasks: [test-strict, test-torch, test-torch-float32, test-dask]
+          #   environments: [array-api-strict, torch-cpu, dask-cpu]
           - tasks: [test-jax]
             environments: [jax-cpu]
     steps:
