@@ -397,7 +397,7 @@ jobs:
         set -euo pipefail
         docker exec linux_32bit bash -c "
         set -exuo pipefail
-        echo -n "Architecture: "
+        echo -n 'Architecture: '
         uname -m
         python3.12 -m venv test
         source test/bin/activate
