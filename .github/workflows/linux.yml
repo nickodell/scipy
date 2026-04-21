@@ -399,6 +399,7 @@ jobs:
         set -exuo pipefail
         echo -n 'Architecture: '
         uname -m
+        false
         python3.12 -m venv test
         source test/bin/activate
         pip install spin 'click<8.3.0' meson ninja
