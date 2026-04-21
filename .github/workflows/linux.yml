@@ -400,7 +400,6 @@ jobs:
         echo -n "Architecture: "
         uname -m
         python3.12 -m venv test
-        false
         source test/bin/activate
         pip install spin 'click<8.3.0' meson ninja
         pip install -r requirements/openblas.txt
