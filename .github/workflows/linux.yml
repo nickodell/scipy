@@ -394,8 +394,9 @@ jobs:
 
     - name: Install dependencies
       run: |
-        docker exec linux_32bit bash -c "
         set -euo pipefail
+        docker exec linux_32bit bash -c "
+        set -exuo pipefail
         echo -n "Architecture: "
         uname -m
         python3.12 -m venv test
@@ -410,17 +411,19 @@ jobs:
 
     - name: Build
       run: |
+        set -euo pipefail
         # Note: `ccache` not used because it isn't available on i686 CentOS 7
         docker exec linux_32bit bash -c "
-        set -euo pipefail
+        set -exuo pipefail
         source test/bin/activate
         spin build --with-scipy-openblas=32
         "
 
     - name: Test
       run: |
-        docker exec linux_32bit bash -c "
         set -euo pipefail
+        docker exec linux_32bit bash -c "
+        set -exuo pipefail
         source test/bin/activate
         spin test -j 2
         "
