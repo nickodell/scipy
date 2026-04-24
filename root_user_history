@@ -1,0 +1,71 @@
+    1  mkdir projects
+    2  cd projects/
+    3  git clone git@github.com:scipy/scipy.git
+    4  apt-get install git
+    5  apt-get update
+    6  git clone git@github.com:scipy/scipy.git
+    7  apt-get install git
+    8  sudo apt install -y gcc g++ gfortran libopenblas-dev liblapack-dev pkg-config python3-pip python3-dev
+    9  apt install -y gcc g++ gfortran libopenblas-dev liblapack-dev pkg-config python3-pip python3-dev
+   10  git clone git@github.com:scipy/scipy.git
+   11  cd sci
+   12  cd scipy
+   13  git clone https://github.com/scipy/scipy.git
+   14  cd scipy/
+   15  git submodule update --init
+   16  curl -fsSL https://claude.ai/install.sh | bash
+   17  apt-get install curl
+   18  curl -fsSL https://claude.ai/install.sh | bash
+   19  python -m pip install -r requirements/all.txt
+   20  pip install -r requirements/all.txt
+   21  pip install -r requirements/all.txt --break-system-backages
+   22  pip --break-system-packages install -r requirements/all.txt
+   23  pip install --break-system-packages -r requirements/all.txt
+   24  spin build
+   25  mkdir projects
+   26  spin build
+   27  spin test
+   28  spin test -c -- --json-report
+   29  pip install pytest-json-report
+   30  pip install pytest-json-report --break-system-packages
+   31  spin test -c -- --json-report
+   32  git checkout -b njo-marker-opt
+   33  claude --hlep
+   34  claude --help
+   35  curl -fsSL https://claude.ai/install.sh | bash
+   36  echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.bashrc
+   37  source ~/.bashrc
+   38* claude --
+   39  vi parse_test_times.py
+   40  apt-get install vim 
+   41  coverage
+   42  coverage -a
+   43  vi parse_test_times.py
+   44  cat > parse_test_times.py
+   45  vi parse_test_times.py 
+   46  python3 parse_test_times.py 
+   47  find . -name .report.json
+   48  vi ./build-install/usr/lib/python3/dist-packages/.report.json
+   49  vi parse_test_times.py 
+   50  python3 parse_test_times.py 
+   51  vi parse_test_times.py 
+   52  python3 parse_test_times.py 
+   53  find . -name .report.json
+   54  vi parse_test_times.py 
+   55  python3 parse_test_times.py 
+   56  python3 parse_test_times.py --help
+   57  python3 parse_test_times.py --by-module
+   58  python3 parse_test_times.py --by-submodule
+   59  vi parse_test_times.py 
+   60  python3 parse_test_times.py --by-submodule
+   61  python3 parse_test_times.py
+   62  claude --allow-dangerously-skip-permissions
+   63  claude
+   64  git status
+   65  claude
+   66  claude --resume 4502de55-9065-44ed-b4f9-f4ebc49c21b6 --permission-mode bypassPermissions
+   67  useradd claude
+   68  chown -R claude:claude .
+   69  su claude
+   70  history
+   71  history > root_user_history
