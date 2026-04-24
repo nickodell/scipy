@@ -45,5 +45,8 @@ RUN spin build
 # Copy in workflow scripts
 COPY --chown=claude:claude establish_baseline.sh check_slow_coverage.sh parse_test_times.py agent_prompt.md ./
 
+# Initialize time debt tracking file
+RUN echo "0s\n" > TEST_TIME_DEBT.md
+
 WORKDIR /projects/scipy
 CMD ["bash"]

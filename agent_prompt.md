@@ -119,6 +119,22 @@ The script appends the slow test's coverage, prints the updated line-by-line rep
 
 Use these to verify that a promoted test (a) passes when run without `-m slow`, and (b) actually covers the source lines you expect, before running the full submodule coverage pass.
 
+## Reclaiming Time: Adding `slow` Markers to Fast Tests
+
+Promoting slow tests adds runtime to the fast suite. If the total runtime grows too much, you can reclaim time by finding currently-fast tests that are expensive but redundant — they cover code already well-exercised by other fast tests — and marking them slow.
+
+**How to find candidates:**
+
+1. Get per-test timing from the JSON report:
+   ```bash
+   spin test -s <submodule> -- --json-report --json-report-file=/tmp/report.json -q
+   python3 parse_test_times.py --by-submodule  # or inspect /tmp/report.json directly
+   ```
+2. Look for fast tests that take >1s and whose source coverage overlaps heavily with other fast tests (i.e., no unique lines they alone cover).
+3. Add `@pytest.mark.slow` to those tests and verify the fast suite still passes and coverage hasn't dropped.
+
+The net effect should be: runtime saved by demotion ≥ runtime added by promotion.
+
 ## Workflow
 
 The baseline has already been established by running `establish_baseline.sh` before this session. Do not re-run the full test suite yourself — it takes ~10 minutes and the baseline is already saved.
@@ -126,13 +142,17 @@ The baseline has already been established by running `establish_baseline.sh` bef
 1. Run `python3 -m coverage report -m` (from `build-install/usr/lib/python3/dist-packages/`) to find **source files with uncovered lines**. Focus on files with meaningful gaps (not 100%, not test files).
 2. For a source file with gaps, examine the uncovered line numbers. Identify what functionality those lines implement.
 3. Search for slow-marked tests that exercise that functionality. Use `check_slow_coverage.sh` to confirm they actually cover new lines without permanently changing the baseline.
-4. If a slow test covers new lines and is cheap enough (rough guideline: adds <1s to fast-suite runtime per meaningful coverage gain), remove its `slow` marker.
+4. If a slow test covers new lines, remove its `slow` marker and add its measured duration to `TEST_TIME_DEBT.md`. If the total exceeds 0, demote a fast test to bring it back under control before continuing.
 5. Commit with a message stating exactly which source file gained how many lines.
 6. Repeat from step 1.
+
+## Tracking Time Debt
+
+Keep a file `TEST_TIME_DEBT.md` with a running total in seconds. Add the measured duration each time you make a test fast; subtract it each time you make a test slow. The total must be **≤ 0** at the end of the session.
 
 ## Success Criteria
 
 - Fast-suite **coverage increases** compared to baseline (measured in source lines, not test lines).
-- Fast-suite **total runtime does not increase significantly** compared to baseline.
+- `TEST_TIME_DEBT.md` total is **≤ 0s**.
 - All fast tests **pass** (exit code 0).
 - No `xslow` markers were modified.
