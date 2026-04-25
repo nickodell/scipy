@@ -29,6 +29,7 @@ name: GPU jobs
 on:
   push:
     branches:
+      - main
       - maintenance/**
   pull_request:
     branches:
