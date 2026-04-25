@@ -1,4 +1,4 @@
-name: GPU jobs
+name: GPU jobs (cirun)
 
 # Updating the Pixi lock file:
 #
@@ -38,6 +38,7 @@ on:
 
 permissions:
   contents: read # to fetch code (actions/checkout)
+  pull_request: write
 
 env:
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
@@ -58,11 +59,15 @@ jobs:
     uses: ./.github/workflows/commit_message.yml
 
   pytorch_gpu:
-    name: PyTorch, JAX, CuPy GPU
+    name: PyTorch, JAX, CuPy GPU (cirun)
     needs: get_commit_message
+    if: needs.get_commit_message.outputs.cirun == '1'
     runs-on: "cirun-aws-gpu--${{ github.run_id }}"
     #runs-on: "runs-on=${{ github.run_id }}/family=g4dn.xlarge/image=ubuntu24-gpu-x64"
     steps:
+      - name: Collect Workflow Telemetry
+        uses: catchpoint/workflow-telemetry-action@v2
+
       - name: Checkout scipy repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -110,11 +115,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-gpu-jax
 
-      # - name: run nvidia-smi
-      #   run: nvidia-smi
+      - name: run nvidia-smi
+        run: nvidia-smi
 
-      # - name: run nvidia-smi --query
-      #   run: nvidia-smi --query
+      - name: run nvidia-smi --query
+        run: nvidia-smi --query
 
       - uses: prefix-dev/setup-pixi@a0af7a228712d6121d37aba47adf55c1332c9c2e # v0.9.4
         with:
@@ -130,10 +135,10 @@ jobs:
         run: pixi run build-cuda
 
       - name: Run PyTorch GPU tests
-        run: pixi run --skip-deps test-torch-cuda -v
+        run: pixi run --skip-deps test-torch-cuda -v -j 4
 
       - name: Run CuPy tests
-        run: pixi run --skip-deps test-cupy -v
+        run: pixi run --skip-deps test-cupy -v -j 4
 
       - name: Run JAX GPU tests
         env:
