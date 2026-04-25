@@ -38,7 +38,7 @@ on:
 
 permissions:
   contents: read # to fetch code (actions/checkout)
-  pull_request: write
+  pull-request: write
 
 env:
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
