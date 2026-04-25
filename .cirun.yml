@@ -1,0 +1,9 @@
+runners:
+  - name: gpu-runner
+    cloud: aws
+    instance_type: n1-standard-1
+    machine_image: ami-03c560f902f09c698
+    region: us-east-2
+    preemptible: true
+    labels:
+      - cirun-aws-gpu
