@@ -612,7 +612,8 @@ class TestPearsonr:
     @pytest.mark.xfail_on_32bit("Monte Carlo method needs > a few kB of memory")
     @pytest.mark.parametrize('alternative', ('less', 'greater', 'two-sided'))
     @pytest.mark.parametrize('method_name',
-                             ('permutation', 'monte_carlo', 'monte_carlo2'))
+                             ('permutation', 'monte_carlo',
+                              pytest.param('monte_carlo2', marks=pytest.mark.slow)))
     def test_resampling_pvalue(self, method_name, alternative):
         rng = np.random.default_rng(24623935790378923)
         size = (2, 100) if method_name == 'permutation' else (2, 1000)
@@ -980,7 +981,6 @@ class TestFisherExact:
 
 
     @pytest.mark.fail_slow(10)
-    @pytest.mark.slow()
     def test_resampling_2x2(self):
         rng = np.random.default_rng(2345783457834572345)
         table = np.asarray([[2, 7], [8, 2]])
@@ -5079,7 +5079,6 @@ class TestKSTwoSamples:
         res = stats.ks_2samp(xp.asarray([1, 2]), xp.asarray([3]))
         check_named_results(res, attributes, xp=xp)
 
-    @pytest.mark.slow
     @skip_xp_backends(np_only=True)
     def test_some_code_paths(self):
         # Check that some code paths are executed
