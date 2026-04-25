@@ -9,8 +9,8 @@ runners:
     # AMI found via 
     # aws ec2 describe-images --region "us-east-2" --owners amazon \
     #   --filters "Name=name,Values=Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04)*" \
-    #   --query='reverse(sort_by(Images, &CreationDate))[0]'
-    machine_image: ami-07cb9c292d6741cf3
+    #   --query='reverse(sort_by(Images, &CreationDate))[0].ImageId'
+    machine_image: ami-0f1a998148248b8fa
     region: us-east-2
     preemptible: true
     labels:
