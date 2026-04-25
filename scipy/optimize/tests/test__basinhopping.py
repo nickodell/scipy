@@ -213,7 +213,9 @@ class TestBasinHopping:
     @pytest.mark.fail_slow(40)
     @pytest.mark.parametrize("method", [
         'CG', 'BFGS', 'L-BFGS-B', 'TNC', 'SLSQP',
-        'Nelder-Mead', 'Powell', 'COBYLA', 'COBYQA'])
+        'Nelder-Mead', 'Powell',
+        pytest.param('COBYLA', marks=pytest.mark.slow),
+        'COBYQA'])
     def test_all_nograd_minimizers(self, method):
         # Test 2-D minimizations without gradient. Newton-CG requires jac=True,
         # so not included here.

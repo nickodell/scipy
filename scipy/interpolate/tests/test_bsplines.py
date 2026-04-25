@@ -1707,6 +1707,7 @@ class TestInterp:
         b = make_interp_spline(x, y, k, t)
         xp_assert_close(b.c, cf, atol=1e-14, rtol=1e-14)
 
+    @pytest.mark.slow
     def test_woodbury(self):
         '''
         Random elements in diagonal matrix with blocks in the
