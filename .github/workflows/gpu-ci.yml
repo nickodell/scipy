@@ -59,7 +59,8 @@ jobs:
   pytorch_gpu:
     name: PyTorch, JAX, CuPy GPU
     needs: get_commit_message
-    runs-on: "cirun-aws-gpu--${{ github.run_id }}"
+    #runs-on: "cirun-aws-gpu--${{ github.run_id }}"
+    runs-on: runs-on=${{ github.run_id }}/runner=2cpu-linux-x64
     steps:
       - name: Checkout scipy repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
