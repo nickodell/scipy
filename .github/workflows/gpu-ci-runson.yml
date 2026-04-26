@@ -69,28 +69,6 @@ jobs:
       - name: Collect Workflow Telemetry
         uses: catchpoint/workflow-telemetry-action@v2
 
-      - name: Probe IAM permissions
-        continue-on-error: true
-        run: |
-          echo "=== Caller identity ==="
-          aws sts get-caller-identity || echo "sts:GetCallerIdentity failed"
-          echo "=== Instance profile ==="
-          curl -sf --max-time 5 http://169.254.169.254/latest/meta-data/iam/info || echo "No instance profile metadata"
-          echo "=== Attached role policies ==="
-          ROLE=$(curl -sf --max-time 5 http://169.254.169.254/latest/meta-data/iam/security-credentials/ || echo "")
-          if [ -n "$ROLE" ]; then
-            aws iam list-attached-role-policies --role-name "$ROLE" || echo "list-attached-role-policies failed"
-            aws iam list-role-policies --role-name "$ROLE" || echo "list-role-policies failed"
-          else
-            echo "No role found via metadata"
-          fi
-
-      - name: Probe S3 cache bucket write access
-        continue-on-error: true
-        run: |
-          echo "test" | aws s3 cp - s3://runs-on-s3bucketcache-stt2ancxw6wm/cache/foo/probe.txt
-          echo "S3 write succeeded"
-
       - name: Checkout scipy repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
@@ -102,7 +80,7 @@ jobs:
         with:
           path: ${{ env.PIXI_CACHE_DIR }}
           # Cache hit if lock file did not change. Otherwise, redownload packages.
-          key: ${{ runner.os }}-gpu-pixi-1-${{ hashFiles('pixi.lock') }}
+          key: ${{ runner.os }}-gpu-pixi-${{ hashFiles('pixi.lock') }}
 
       - name: Setup compiler cache
         uses: actions/cache@v4
