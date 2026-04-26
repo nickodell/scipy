@@ -13,5 +13,6 @@ runners:
     machine_image: ami-0f1a998148248b8fa
     region: us-east-2
     preemptible: true
+    cache: true
     labels:
       - cirun-aws-gpu
