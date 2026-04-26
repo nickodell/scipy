@@ -16,3 +16,5 @@ runners:
     cache: true
     labels:
       - cirun-aws-gpu
+    extra_config:
+      cache: true
