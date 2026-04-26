@@ -136,14 +136,17 @@ jobs:
         run: pixi run build-cuda -j 4
 
       - name: Run PyTorch GPU tests
+        if: always()
         # remove me: run only signal tests
         run: pixi run --skip-deps test-torch-cuda -v -j 4 -s signal
 
       - name: Run CuPy tests
+        if: always()
         # remove me: run only signal tests
         run: pixi run --skip-deps test-cupy -v -j 4 -s signal
 
       - name: Run JAX GPU tests
+        if: always()
         env:
           # Give 10% of GPU memory to each pytest worker to ensure fairness.
           XLA_PYTHON_CLIENT_MEM_FRACTION: .10
