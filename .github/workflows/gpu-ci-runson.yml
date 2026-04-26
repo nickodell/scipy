@@ -62,8 +62,7 @@ jobs:
     name: PyTorch, JAX, CuPy GPU (runson)
     needs: get_commit_message
     if: needs.get_commit_message.outputs.runson == '1'
-    # runs-on: "runs-on=${{ github.run_id }}/runner=gpu-nvidia/extras=s3-cache"
-    runs-on: "runs-on=${{ github.run_id }}/runner=gpu-nvidia"
+    runs-on: "runs-on=${{ github.run_id }}/family=g4dn.xlarge/ami=ami-0dfda33980ca35fff/extras=s3-cache"
     steps:
       - uses: runs-on/action@v2
 
