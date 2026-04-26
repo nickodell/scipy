@@ -153,4 +153,4 @@ jobs:
           # Minimum compile time to store entry to cache
           JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS: "0"
         # remove me: run only signal tests
-        run: pixi run --skip-deps test-jax-cuda -v -j 4 -- --dist worksteal
+        run: pixi run --skip-deps test-jax-cuda -v -j 3 -- --dist worksteal
