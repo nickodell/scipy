@@ -59,11 +59,10 @@ jobs:
     uses: ./.github/workflows/commit_message.yml
 
   pytorch_gpu:
-    name: PyTorch, JAX, CuPy GPU (cirun)
+    name: PyTorch, JAX, CuPy GPU (runson)
     needs: get_commit_message
-    if: needs.get_commit_message.outputs.cirun == '1'
-    runs-on: "cirun-aws-gpu--${{ github.run_id }}"
-    #runs-on: "runs-on=${{ github.run_id }}/family=g4dn.xlarge/image=ubuntu24-gpu-x64"
+    if: needs.get_commit_message.outputs.runson == '1'
+    runs-on: "runs-on=${{ github.run_id }}/family=g4dn.xlarge/image=ubuntu24-gpu-x64"
     steps:
       - name: Collect Workflow Telemetry
         uses: catchpoint/workflow-telemetry-action@v2

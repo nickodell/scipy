@@ -9,6 +9,9 @@ on:
       cirun:
         description: "Whether commit message contains 'cirun'"
         value: ${{ jobs.check_skip_tags.outputs.cirun }}
+      runson:
+        description: "Whether commit message contains 'runson'"
+        value: ${{ jobs.check_skip_tags.outputs.runson }}
 
 permissions:
    contents: read
@@ -20,6 +23,7 @@ jobs:
     outputs:
       message: ${{ steps.skip_check.outputs.message }}
       cirun: ${{ steps.skip_check.outputs.cirun }}
+      runson: ${{ steps.skip_check.outputs.runson }}
     steps:
       - name: Checkout scipy
         if: ${{ !contains(github.actor, 'nektos/act') }}
@@ -38,6 +42,7 @@ jobs:
           set -xe
           RUN="1"
           CIRUN="0"
+          RUNSON="0"
           # For running a job locally with Act (https://github.com/nektos/act),
           # always run the job rather than skip based on commit message
           if [[ $ACT != true ]]; then
@@ -48,7 +53,11 @@ jobs:
             if [[ "$COMMIT_MSG" == *"cirun"* ]]; then
                 CIRUN="1"
             fi
+            if [[ "$COMMIT_MSG" == *"runson"* ]]; then
+                RUNSON="1"
+            fi
           fi
           echo "message=$RUN" >> $GITHUB_OUTPUT
           echo "cirun=$CIRUN" >> $GITHUB_OUTPUT
+          echo "runson=$RUNSON" >> $GITHUB_OUTPUT
           echo github.ref $GITHUB_REF
