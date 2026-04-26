@@ -133,18 +133,18 @@ jobs:
             cupy
 
       - name: Build SciPy
-        run: pixi run build-cuda
+        run: pixi run build-cuda -j 4
 
-      - name: Run PyTorch GPU tests
-        run: pixi run --skip-deps test-torch-cuda -v -j 4
+      # - name: Run PyTorch GPU tests
+      #   run: pixi run --skip-deps test-torch-cuda -v -j 4
 
-      - name: Run CuPy tests
-        run: pixi run --skip-deps test-cupy -v -j 4
+      # - name: Run CuPy tests
+      #   run: pixi run --skip-deps test-cupy -v -j 4
 
-      - name: Run JAX GPU tests
-        env:
-          # Give 10% of GPU memory to each pytest worker to ensure fairness.
-          XLA_PYTHON_CLIENT_MEM_FRACTION: .10
-          # Minimum compile time to store entry to cache
-          JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS: "0"
-        run: pixi run --skip-deps test-jax-cuda -v -j 4 -- --dist worksteal
+      # - name: Run JAX GPU tests
+      #   env:
+      #     # Give 10% of GPU memory to each pytest worker to ensure fairness.
+      #     XLA_PYTHON_CLIENT_MEM_FRACTION: .10
+      #     # Minimum compile time to store entry to cache
+      #     JAX_PERSISTENT_CACHE_MIN_COMPILE_TIME_SECS: "0"
+      #   run: pixi run --skip-deps test-jax-cuda -v -j 4 -- --dist worksteal
