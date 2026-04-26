@@ -62,7 +62,7 @@ jobs:
     name: PyTorch, JAX, CuPy GPU (runson)
     needs: get_commit_message
     if: needs.get_commit_message.outputs.runson == '1'
-    runs-on: "runs-on=${{ github.run_id }}/family=g4dn.xlarge/image=ubuntu24-gpu-x64/extras=s3-cache"
+    runs-on: "runs-on=${{ github.run_id }}/family=g4dn.2xlarge/image=ubuntu24-gpu-x64/extras=s3-cache"
     steps:
       - uses: runs-on/action@v2
 
