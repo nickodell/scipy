@@ -38,7 +38,6 @@ on:
 
 permissions:
   contents: read # to fetch code (actions/checkout)
-  pull-requests: write
 
 env:
   CCACHE_DIR: "${{ github.workspace }}/.ccache"
@@ -63,9 +62,6 @@ jobs:
     if: needs.get_commit_message.outputs.cirun == '1'
     runs-on: "cirun-aws-gpu--${{ github.run_id }}"
     steps:
-      - name: Collect Workflow Telemetry
-        uses: catchpoint/workflow-telemetry-action@v2
-
       - name: Checkout scipy repo
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
