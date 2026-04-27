@@ -63,7 +63,6 @@ jobs:
     needs: get_commit_message
     if: needs.get_commit_message.outputs.cirun == '1'
     runs-on: "cirun-aws-gpu--${{ github.run_id }}"
-    #runs-on: "runs-on=${{ github.run_id }}/family=g4dn.xlarge/image=ubuntu24-gpu-x64"
     steps:
       - name: Collect Workflow Telemetry
         uses: catchpoint/workflow-telemetry-action@v2
