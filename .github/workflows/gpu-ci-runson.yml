@@ -133,17 +133,15 @@ jobs:
             cupy
 
       - name: Build SciPy
-        run: pixi run build-cuda -j 4
+        run: pixi run build-cuda
 
       - name: Run PyTorch GPU tests
         if: always()
-        # remove me: run only signal tests
-        run: pixi run --skip-deps test-torch-cuda -v -j 4
+        run: pixi run --skip-deps test-torch-cuda -v
 
       - name: Run CuPy tests
         if: always()
-        # remove me: run only signal tests
-        run: pixi run --skip-deps test-cupy -v -j 4
+        run: pixi run --skip-deps test-cupy -v
 
       - name: Run JAX GPU tests
         if: always()
