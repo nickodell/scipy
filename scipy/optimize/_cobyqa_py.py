@@ -3,6 +3,8 @@ import numpy as np
 from ._optimize import _check_unknown_options
 
 
+
+
 def _minimize_cobyqa(fun, x0, args=(), bounds=None, constraints=(),
                      callback=None, disp=False, maxfev=None, maxiter=None,
                      f_target=-np.inf, feasibility_tol=1e-8,
@@ -65,4 +67,4 @@ def _minimize_cobyqa(fun, x0, args=(), bounds=None, constraints=(),
         'radius_final': float(final_tr_radius),
         'scale': bool(scale),
     }
-    return _cobyqa_minimize(fun, x0, args, bounds, constraints, callback, options)
+    return minimize(fun, x0, args, bounds, constraints, callback, options)
