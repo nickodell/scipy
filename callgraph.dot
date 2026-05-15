@@ -1,0 +1,44 @@
+digraph {
+    node [shape=box]
+
+    // Construction path: RectBivariateSpline(x, y, z, s=s)
+    RectBivariateSpline_init [label="RectBivariateSpline.__init__\nscipy/interpolate/_fitpack2.py"]
+    _regrid_smth             [label="_regrid_smth\nscipy/interpolate/_fitpack2.py"]
+    fitpack_regrid           [label="fitpack_regrid\nscipy/interpolate/src/_fitpackmodule.c"]
+    regrid                   [label="regrid\nscipy/interpolate/src/dfitpack.c"]
+    fpchec                   [label="fpchec\nscipy/interpolate/src/dfitpack.c"]
+    fpregr                   [label="fpregr\nscipy/interpolate/src/dfitpack.c"]
+    fpgrre                   [label="fpgrre\nscipy/interpolate/src/dfitpack.c"]
+    fpknot                   [label="fpknot\nscipy/interpolate/src/dfitpack.c"]
+    fprati                   [label="fprati\nscipy/interpolate/src/dfitpack.c"]
+    fpback                   [label="(S) fpback\nscipy/interpolate/src/dfitpack.c"]
+    fpdisc                   [label="(S) fpdisc\nscipy/interpolate/src/dfitpack.c"]
+    fpgivs                   [label="(S) fpgivs\nscipy/interpolate/src/dfitpack.c"]
+    fprota                   [label="(S) fprota\nscipy/interpolate/src/dfitpack.c"]
+
+    RectBivariateSpline_init -> _regrid_smth
+    _regrid_smth             -> fitpack_regrid
+    fitpack_regrid           -> regrid
+    regrid                   -> fpchec
+    regrid                   -> fpregr
+    fpregr                   -> fpgrre
+    fpregr                   -> fpknot
+    fpregr                   -> fprati
+    fpgrre                   -> fpback
+    fpgrre                   -> fpbspl
+    fpgrre                   -> fpdisc
+    fpgrre                   -> fpgivs
+    fpgrre                   -> fprota
+
+    // Evaluation path: spl(x, y)
+    BivariateSpline_call     [label="BivariateSpline.__call__\nscipy/interpolate/_fitpack2.py"]
+    fitpack_bispev           [label="fitpack_bispev\nscipy/interpolate/src/_fitpackmodule.c"]
+    bispev                   [label="bispev\nscipy/interpolate/src/dfitpack.c"]
+    fpbisp                   [label="fpbisp\nscipy/interpolate/src/dfitpack.c"]
+    fpbspl                   [label="fpbspl\nscipy/interpolate/src/dfitpack.c"]
+
+    BivariateSpline_call -> fitpack_bispev
+    fitpack_bispev       -> bispev
+    bispev               -> fpbisp
+    fpbisp               -> fpbspl
+}

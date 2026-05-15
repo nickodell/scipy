@@ -1,0 +1,232 @@
+bispeu:
+    fpbisp
+
+bispev:
+    fpbisp
+
+clocur:
+    fpchep
+    fpclos
+    sqrt
+
+curfit:
+    fpchec
+    fpcurf
+
+dblint:
+    fpintb
+
+fpader:
+
+fpback:
+
+fpbacp:
+
+fpbisp:
+    fpbspl
+
+fpbspl:
+
+fpchec:
+
+fpchep:
+
+fpclos:
+    fabs
+    fpbacp
+    fpbspl
+    fpdisc
+    fpgivs
+    fpknot
+    fprati
+    fprota
+    pow
+
+fpcurf:
+    fabs
+    fpback
+    fpbspl
+    fpdisc
+    fpgivs
+    fpknot
+    fprati
+    fprota
+    pow
+
+fpcuro:
+    atan2
+    copysign
+    cos
+    fabs
+    fmax
+    pow
+    sqrt
+
+fpcyt1:
+
+fpcyt2:
+
+fpdisc:
+
+fpgivs:
+    fabs
+    sqrt
+
+fpgrre:
+    fpback
+    fpbspl
+    fpdisc
+    fpgivs
+    fprota
+    pow
+
+fpgrsp:
+    cos
+    fpback
+    fpbacp
+    fpbspl
+    fpcyt1
+    fpcyt2
+    fpdisc
+    fpgivs
+    fprota
+    sin
+
+fpinst:
+
+fpintb:
+
+fpknot:
+
+fpopsp:
+    fpgrsp
+    fpsysy
+
+fporde:
+
+fppara:
+    fabs
+    fpback
+    fpbspl
+    fpdisc
+    fpgivs
+    fpknot
+    fprati
+    fprota
+    pow
+
+fpperi:
+    fabs
+    fpbacp
+    fpbspl
+    fpdisc
+    fpgivs
+    fpknot
+    fprati
+    fprota
+    pow
+
+fprank:
+    fpgivs
+    fprota
+
+fprati:
+
+fpregr:
+    fabs
+    fpgrre
+    fpknot
+    fprati
+
+fprota:
+
+fprpsp:
+
+fpspgr:
+    fabs
+    fpknot
+    fpopsp
+    fprati
+
+fpsphe:
+    cos
+    fabs
+    fpback
+    fpbspl
+    fpdisc
+    fpgivs
+    fporde
+    fprank
+    fprati
+    fprota
+    fprpsp
+    pow
+    sin
+    sqrt
+
+fpsurf:
+    fabs
+    fpback
+    fpbspl
+    fpdisc
+    fpgivs
+    fporde
+    fprank
+    fprati
+    fprota
+    pow
+    sqrt
+
+fpsysy:
+
+insert:
+    fpinst
+
+parcur:
+    fpchec
+    fppara
+    pow
+    sqrt
+
+parder:
+    fpbisp
+
+pardeu:
+    fpbisp
+
+pardtc:
+
+percur:
+    fpchep
+    fpperi
+
+regrid:
+    fpchec
+    fpregr
+
+spalde:
+    fpader
+
+spgrid:
+    fpchec
+    fpchep
+    fpspgr
+
+sphere:
+    fpsphe
+
+splder:
+    fpbspl
+
+splev:
+    fpbspl
+
+splint:
+    fpintb
+
+sproot:
+    fpcuro
+
+surfit:
+    fpsurf
+
