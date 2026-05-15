@@ -5486,9 +5486,6 @@ fpregr(const int iopt,
        int *ier)           // arraysize ier[1]
 {
     (void)lwrk;  // Unused
-    // INTENTIONAL BUG FOR ASAN TESTING: read one element past end of x
-    // volatile double asan_canary = x[mx];
-    // (void)asan_canary;
     const double one = 1.0;
     const double half = 0.5;
     const double con1 = 0.1;
