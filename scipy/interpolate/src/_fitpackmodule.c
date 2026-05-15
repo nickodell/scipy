@@ -1,5 +1,6 @@
 #define PY_SSIZE_T_CLEAN
 #include <Python.h>
+#include <string.h>
 #include "numpy/arrayobject.h"
 #include "dfitpack.h"
 
@@ -1689,6 +1690,7 @@ fitpack_regrid(PyObject* Py_UNUSED(dummy), PyObject *args)
     }
 
     /* Call the C function */
+    memset(dfitpack_ub_error_msg, 0, sizeof(dfitpack_ub_error_msg));
     regrid(iopt, mx,
            (double *)PyArray_DATA(ap_x), my,
            (double *)PyArray_DATA(ap_y),

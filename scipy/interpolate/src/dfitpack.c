@@ -2414,6 +2414,17 @@ fpgrre(int ifsx, int ifsy, int ifbx, int ifby, const double *x, const int mx, co
         }
     }
 
+    // check 1: q after x-direction Givens reduction
+    for (int _ci = 0; _ci < my * nk1x; _ci++) {
+        if (isnan(q[_ci])) {
+            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                "fpgrre: NaN in q[%d] after x-direction Givens reduction "
+                "(my=%d nk1x=%d p=%.17g ibandx=%d)",
+                _ci, my, nk1x, p, ibandx);
+            *fp = NAN; return;
+        }
+    }
+
     // reduce the matrix (ay) to upper triangular form (ry) using givens
     // rotations. apply the same transformations to the columns of matrix g
     // to obtain the (ny-ky-1) x (nx-kx-1) matrix h.
@@ -2503,6 +2514,19 @@ fpgrre(int ifsx, int ifsy, int ifbx, int ifby, const double *x, const int mx, co
         k += nk1y;
     }
 
+    // check 2: c after y-direction back-substitution (ry)(c1) = h
+    for (int _ci = 0; _ci < nk1x * nk1y; _ci++) {
+        if (isnan(c[_ci])) {
+            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                "fpgrre: spline coefficient c[%d] is NaN after solving the "
+                "y-direction triangular system. The y-direction knot system is "
+                "likely singular (zero pivot in Givens reduction). "
+                "Grid: %d x %d coefficients, y-bandwidth=%d, smoothing p=%.17g",
+                _ci, nk1x, nk1y, ibandy, p);
+            *fp = NAN; return;
+        }
+    }
+
     // second step: solve c(rx)' = (c1)
     k = 0;
     for (j = 1; j <= nk1y; j++) {
@@ -2517,6 +2541,19 @@ fpgrre(int ifsx, int ifsy, int ifbx, int ifby, const double *x, const int mx, co
         for (i = 1; i <= nk1x; i++) {
             c[l - 1] = right[i - 1];
             l += nk1y;
+        }
+    }
+
+    // check 3: c after x-direction back-substitution c(rx)' = (c1)
+    for (int _ci = 0; _ci < nk1x * nk1y; _ci++) {
+        if (isnan(c[_ci])) {
+            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                "fpgrre: spline coefficient c[%d] is NaN after solving the "
+                "x-direction triangular system. The x-direction knot system is "
+                "likely singular (zero pivot in Givens reduction). "
+                "Grid: %d x %d coefficients, x-bandwidth=%d, smoothing p=%.17g",
+                _ci, nk1x, nk1y, ibandx, p);
+            *fp = NAN; return;
         }
     }
 
@@ -2566,6 +2603,17 @@ fpgrre(int ifsx, int ifsy, int ifbx, int ifby, const double *x, const int mx, co
 
             // calculate the squared residual at the current grid point.
             term = pow(z[iz - 1] - term, 2);
+
+            // check 4: residual at this grid point
+            if (isnan(term)) {
+                snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                    "fpgrre: NaN in term (squared residual) at grid point "
+                    "i1=%d i2=%d iz=%d z=%.17g k2=%d c[k2-1]=%.17g "
+                    "(mx=%d my=%d nk1x=%d nk1y=%d p=%.17g)",
+                    i1, i2, iz, z[iz - 1], k2, c[k2 - 1],
+                    mx, my, nk1x, nk1y, p);
+                *fp = NAN; return;
+            }
 
             // adjust the different parameters.
             *fp = *fp + term;
@@ -5644,8 +5692,11 @@ restart_iteration:
         if (iopt < 0) { return; }
         double fpms = *fp - s;
         if (isnan(fpms)) {
-            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
-                "fpregr: fpms is NaN: *fp=%.17g s=%.17g", *fp, s);
+            if (dfitpack_ub_error_msg[0] == '\0') {
+                // no specific reason, write fallback message
+                snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                    "fpregr: fpms is NaN: *fp=%.17g s=%.17g", *fp, s);
+            }
             *ier = 3; return;
         }
         if (fabs(fpms) < acc) { return; }
