@@ -2506,6 +2506,31 @@ fpgrre(int ifsx, int ifsy, int ifbx, int ifby, const double *x, const int mx, co
         }
     }
 
+    // check 1b: c (RHS h) for NaN after y-direction Givens reduction, before fpback
+    for (int _ci = 0; _ci < nk1x * nk1y; _ci++) {
+        if (isnan(c[_ci])) {
+            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                "fpgrre: NaN in c[%d] (RHS h) after y-direction Givens reduction, "
+                "before back-substitution. "
+                "Grid: %d x %d coefficients, y-bandwidth=%d, smoothing p=%.17g",
+                _ci, nk1x, nk1y, ibandy, p);
+            *fp = NAN; return;
+        }
+    }
+
+    // check 1c: ay diagonal for NaN or zero after y-direction Givens reduction
+    // (zero diagonal -> fpback divides by zero -> NaN coefficients)
+    for (int _di = 0; _di < nk1y; _di++) {
+        if (isnan(ay[_di]) || ay[_di] == 0.0) {
+            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                "fpgrre: ay diagonal entry [%d] = %.17g after y-direction Givens "
+                "reduction (NaN or zero -> singular system). "
+                "Grid: %d x %d coefficients, y-bandwidth=%d, smoothing p=%.17g",
+                _di, ay[_di], nk1x, nk1y, ibandy, p);
+            *fp = NAN; return;
+        }
+    }
+
     // backward substitution to obtain the b-spline coefficients as the
     // solution of the linear system    (ry) c (rx)' = h.
     // first step: solve the system  (ry) (c1) = h.
