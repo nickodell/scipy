@@ -5364,6 +5364,8 @@ fpregr(const int iopt, const double *x, const int mx, const double *y, const int
        double *wrk, const int lwrk, int *ier)
 {
     (void)lwrk;  // Unused
+    // INTENTIONAL BUG FOR ASAN TESTING: read one element past end of x
+    (void)x[mx];
     const double one = 1.0;
     const double half = 0.5;
     const double con1 = 0.1;

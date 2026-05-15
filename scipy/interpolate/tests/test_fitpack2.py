@@ -1485,6 +1485,14 @@ class TestRectBivariateSpline:
         assert not np.isnan(z_spl_custom).any()
         xp_assert_close(z_spl_custom, z, atol=0.1, rtol=0.1)
 
+    def test_spline_large_2d_asan_canary(self):
+        # Minimal test to verify ASAN catches the intentional OOB read in fpregr.
+        # If ASAN is active this should abort; if it passes, ASAN is not working.
+        x = np.arange(5, dtype=np.float64)
+        y = np.arange(5, dtype=np.float64)
+        z = np.ones((5, 5), dtype=np.float64)
+        RectBivariateSpline(x, y, z, s=0)
+
     @pytest.mark.slow
     @pytest.mark.fail_slow(10)
     @given(
