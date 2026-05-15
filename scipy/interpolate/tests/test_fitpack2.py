@@ -1493,7 +1493,7 @@ class TestRectBivariateSpline:
         z = np.ones((5, 5), dtype=np.float64)
         RectBivariateSpline(x, y, z, s=0)
 
-    @pytest.mark.slow
+    @pytest.mark.xslow
     @pytest.mark.fail_slow(10)
     @given(
         kx=st.integers(min_value=1, max_value=5),
