@@ -1709,7 +1709,7 @@ fitpack_regrid(PyObject* Py_UNUSED(dummy), PyObject *args)
     Py_DECREF(ap_wrk);
     Py_DECREF(ap_iwrk);
 
-    if (ier == 3) {
+    if (ier == 99) {
         PyErr_SetString(FuckingUBError, dfitpack_ub_error_msg);
         Py_DECREF(ap_tx);
         Py_DECREF(ap_ty);

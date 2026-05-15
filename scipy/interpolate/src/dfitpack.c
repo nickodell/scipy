@@ -5698,7 +5698,7 @@ restart_iteration:
                 snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
                     "fpregr: fpms is NaN: *fp=%.17g s=%.17g", *fp, s);
             }
-            *ier = 3; return;
+            *ier = 99; return;
         }
         if (fabs(fpms) < acc) { return; }
 
@@ -5744,14 +5744,14 @@ restart_iteration:
                         "fpregr x-direction: (int)(rn * fpms / *reducx) is NaN: "
                         "rn=%.17g fpms=%.17g *reducx=%.17g",
                         rn, fpms, *reducx);
-                    *ier = 3; return;
+                    *ier = 99; return;
                 }
                 if (npl1_f > INT_MAX || npl1_f < INT_MIN) {
                     snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
                         "fpregr x-direction: (int)(rn * fpms / *reducx) overflows int: "
                         "value=%.17g rn=%.17g fpms=%.17g *reducx=%.17g",
                         npl1_f, rn, fpms, *reducx);
-                    *ier = 3; return;
+                    *ier = 99; return;
                 }
                 npl1 = (int)npl1_f;
             }
@@ -5779,14 +5779,14 @@ restart_iteration:
                         "fpregr y-direction: (int)(rn * fpms / *reducy) is NaN: "
                         "rn=%.17g fpms=%.17g *reducy=%.17g",
                         rn, fpms, *reducy);
-                    *ier = 3; return;
+                    *ier = 99; return;
                 }
                 if (npl1_f > INT_MAX || npl1_f < INT_MIN) {
                     snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
                         "fpregr y-direction: (int)(rn * fpms / *reducy) overflows int: "
                         "value=%.17g rn=%.17g fpms=%.17g *reducy=%.17g",
                         npl1_f, rn, fpms, *reducy);
-                    *ier = 3; return;
+                    *ier = 99; return;
                 }
                 npl1 = (int)npl1_f;
             }
