@@ -145,9 +145,22 @@ bispeu(const double *tx, int nx, const double *ty, int ny, const double *c,
 
 
 void
-bispev(const double *tx, int nx, const double *ty, int ny, const double *c,
-       int kx, int ky, const double *x, int mx, const double *y, int my,
-       double *z, double *wrk, int lwrk, int *iwrk, int kwrk, int *ier)
+bispev(const double *tx,  // arraysize tx[nx]
+       int nx,
+       const double *ty,  // arraysize ty[ny]
+       int ny,
+       const double *c,   // arraysize c[(nx-kx-1)*(ny-ky-1)]
+       int kx, int ky,
+       const double *x,   // arraysize x[mx]
+       int mx,
+       const double *y,   // arraysize y[my]
+       int my,
+       double *z,         // arraysize z[mx*my]
+       double *wrk,       // arraysize wrk[mx*(kx+1) + my*(ky+1)]
+       int lwrk,          // = mx*(kx+1) + my*(ky+1)
+       int *iwrk,         // arraysize iwrk[mx+my]
+       int kwrk,          // = mx+my
+       int *ier)          // arraysize ier[1]
 {
     int i, iw, lwest;
 
@@ -622,7 +635,12 @@ fpbspl(const double* t, const int n, const int k, const double x, const int l, d
 
 
 void
-fpchec(const double* x, const int m, const double* t, const int n, const int k, int* ier)
+fpchec(const double* x,  // arraysize x[m]
+       const int m,
+       const double* t,  // arraysize t[n]  (underlying alloc is nxest or nyest; caller passes *nx or *ny as n)
+       const int n,
+       const int k,
+       int* ier)         // arraysize ier[1]
 {
     int k1 = k + 1;
     int k2 = k1 + 1;
@@ -5356,12 +5374,39 @@ fprati(double* p1, double* f1, double* p2, double* f2, double* p3, double* f3)
 
 
 static void
-fpregr(const int iopt, const double *x, const int mx, const double *y, const int my, const double *z, const int mz,
-       const double xb, const double xe, const double yb, const double ye, const int kx, const int ky, const double s,
-       const int nxest, const int nyest, const double tol, const int maxit, const int nc, int *nx, double *tx, int *ny,
-       double *ty, double *c, double *fp, double *fp0, double *fpold, double *reducx, double *reducy, double *fpintx,
-       double *fpinty, int *lastdi, int *nplusx, int *nplusy, int *nrx, int *nry, int *nrdatx, int *nrdaty,
-       double *wrk, const int lwrk, int *ier)
+fpregr(const int iopt,
+       const double *x,    // arraysize x[mx]
+       const int mx,
+       const double *y,    // arraysize y[my]
+       const int my,
+       const double *z,    // arraysize z[mz]  where mz = mx*my
+       const int mz,
+       const double xb, const double xe, const double yb, const double ye,
+       const int kx, const int ky, const double s,
+       const int nxest, const int nyest, const double tol, const int maxit,
+       const int nc,
+       int *nx,            // arraysize nx[1]
+       double *tx,         // arraysize tx[nxest]
+       int *ny,            // arraysize ny[1]
+       double *ty,         // arraysize ty[nyest]
+       double *c,          // arraysize c[nc]  where nc = (nxest-kx-1)*(nyest-ky-1)
+       double *fp,         // arraysize fp[1]
+       double *fp0,        // arraysize fp0[1]    (= &wrk[0] in caller)
+       double *fpold,      // arraysize fpold[1]  (= &wrk[1])
+       double *reducx,     // arraysize reducx[1] (= &wrk[2])
+       double *reducy,     // arraysize reducy[1] (= &wrk[3])
+       double *fpintx,     // arraysize fpintx[nxest]  (= &wrk[4])
+       double *fpinty,     // arraysize fpinty[nyest]  (= &wrk[4+nxest])
+       int *lastdi,        // arraysize lastdi[1]  (= &iwrk[0])
+       int *nplusx,        // arraysize nplusx[1]  (= &iwrk[1])
+       int *nplusy,        // arraysize nplusy[1]  (= &iwrk[2])
+       int *nrx,           // arraysize nrx[mx]    (= &iwrk[3])
+       int *nry,           // arraysize nry[my]    (= &iwrk[3+mx])
+       int *nrdatx,        // arraysize nrdatx[nxest]  (= &iwrk[3+mx+my])
+       int *nrdaty,        // arraysize nrdaty[nyest]  (= &iwrk[3+mx+my+nxest])
+       double *wrk,        // arraysize wrk[jwrk]  where jwrk = lwrk_total - 4 - nxest - nyest
+       const int lwrk,     // = jwrk
+       int *ier)           // arraysize ier[1]
 {
     (void)lwrk;  // Unused
     // INTENTIONAL BUG FOR ASAN TESTING: read one element past end of x
