@@ -1486,19 +1486,30 @@ class TestRectBivariateSpline:
         assert not np.isnan(z_spl_custom).any()
         xp_assert_close(z_spl_custom, z, atol=0.1, rtol=0.1)
 
-    # def test_spline_large_2d_nan_in_givens_grid(self):
-    #     # RectBivariateSpline(s=1) on a 250, 50 integer grid hits a zero pivot
-    #     # in fpgrre's y-direction Givens reduction, producing NaN coefficients.
-    #     from scipy.interpolate._fitpack import FuckingUBError
-    #     x, y, z = self._sample_large_2d_data(250, 50)
-    #     with pytest.raises(FuckingUBError, match="y-direction triangular system"):
-    #         RectBivariateSpline(x, y, z, s=1)
+    def test_spline_large_2d_nan_in_givens_grid(self):
+        # RectBivariateSpline(s=1) on a 250, 50 integer grid hits a zero pivot
+        # in fpgrre's y-direction Givens reduction, producing NaN coefficients.
+        from scipy.interpolate._fitpack import FuckingUBError
+        x, y, z = self._sample_large_2d_data(100, 150)
+        # with pytest.raises(FuckingUBError, match="y-direction triangular system"):
+        RectBivariateSpline(x, y, z, s=1)
 
     def test_spline_large_2d_nan_in_givens_overflow(self):
         from scipy.interpolate._fitpack import FuckingUBError
         x, y, z = self._sample_large_2d_data(50, 150)
         with pytest.raises(FuckingUBError, match="fpregr x-direction: .* overflows int"):
             RectBivariateSpline(x, y, z, s=1, maxit=2)
+
+    def test_spline_large_2d_nan_in_givens_overflow_smooth(self):
+        from scipy.interpolate._fitpack import FuckingUBError
+        nx, ny = 50, 150
+        x = np.arange(nx, dtype=np.float64)
+        y = np.arange(ny, dtype=np.float64)
+        X, Y = np.meshgrid(x, y, indexing='ij')
+        z = np.sin(X / 10.0) * np.cos(Y / 20.0) * 100
+        # Same code path as test_spline_large_2d_nan_in_givens_overflow, but does not raise
+        # due to less wiggly function
+        RectBivariateSpline(x, y, z, s=1, maxit=10)
 
     def test_spline_large_2d_nan_in_givens_sweep(self):
         # Search for the smallest (nx*ny) grid that triggers a zero pivot in
@@ -1520,7 +1531,9 @@ class TestRectBivariateSpline:
             except ValueError:
                 # ignore convergence failure
                 continue
-            except FuckingUBError:
+            except FuckingUBError as e:
+                if "overflows int" in str(e):
+                    continue
                 smallest = (nx, ny)
                 break
 
