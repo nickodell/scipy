@@ -1518,6 +1518,7 @@ class TestRectBivariateSpline:
             try:
                 RectBivariateSpline(x, y, z, s=1)
             except ValueError:
+                # ignore convergence failure
                 continue
             except FuckingUBError:
                 smallest = (nx, ny)
