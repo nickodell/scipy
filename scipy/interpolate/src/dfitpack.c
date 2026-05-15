@@ -1,4 +1,7 @@
 #include "dfitpack.h"
+#include <stdio.h>
+
+char dfitpack_ub_error_msg[512];
 
 // The following are not yet translated from the original FITPACK Fortran77 code.
 // cocosp
@@ -5640,6 +5643,11 @@ restart_iteration:
         // test whether the least-squares spline is an acceptable solution.
         if (iopt < 0) { return; }
         double fpms = *fp - s;
+        if (isnan(fpms)) {
+            snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                "fpregr: fpms is NaN: *fp=%.17g s=%.17g", *fp, s);
+            *ier = 3; return;
+        }
         if (fabs(fpms) < acc) { return; }
 
         // if f(p=inf) < s, we accept the choice of knots.
@@ -5678,7 +5686,15 @@ restart_iteration:
             int npl1 = (*nplusx) * 2;
             double rn = (double)(*nplusx);
             if (*reducx > acc) {
-                npl1 = (int)(rn * fpms / (*reducx));
+                double npl1_f = rn * fpms / (*reducx);
+                if (isnan(npl1_f)) {
+                    snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                        "fpregr x-direction: (int)(rn * fpms / *reducx) is NaN: "
+                        "rn=%.17g fpms=%.17g *reducx=%.17g",
+                        rn, fpms, *reducx);
+                    *ier = 3; return;
+                }
+                npl1 = (int)npl1_f;
             }
             // nplx = min0(nplusx*2,max0(npl1,nplusx/2,1))
             int temp1 = (*nplusx) * 2;
@@ -5698,7 +5714,15 @@ restart_iteration:
             int npl1 = (*nplusy) * 2;
             double rn = (double)(*nplusy);
             if (*reducy > acc) {
-                npl1 = (int)(rn * fpms / (*reducy));
+                double npl1_f = rn * fpms / (*reducy);
+                if (isnan(npl1_f)) {
+                    snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                        "fpregr y-direction: (int)(rn * fpms / *reducy) is NaN: "
+                        "rn=%.17g fpms=%.17g *reducy=%.17g",
+                        rn, fpms, *reducy);
+                    *ier = 3; return;
+                }
+                npl1 = (int)npl1_f;
             }
             // nply = min0(nplusy*2,max0(npl1,nplusy/2,1))
             int temp1 = (*nplusy) * 2;

@@ -6,6 +6,8 @@
 #define PyInt_AsLong PyLong_AsLong
 
 static PyObject *fitpack_error;
+static PyObject *FuckingUBError;
+extern char dfitpack_ub_error_msg[512];
 
 
 static char doc_bispeu[] = " z,ier = bispeu(tx,ty,c,kx,ky,x,y)";
@@ -1705,6 +1707,14 @@ fitpack_regrid(PyObject* Py_UNUSED(dummy), PyObject *args)
     Py_DECREF(ap_wrk);
     Py_DECREF(ap_iwrk);
 
+    if (ier == 3) {
+        PyErr_SetString(FuckingUBError, dfitpack_ub_error_msg);
+        Py_DECREF(ap_tx);
+        Py_DECREF(ap_ty);
+        Py_DECREF(ap_c);
+        return NULL;
+    }
+
     return Py_BuildValue(("iNiNNdi"),
                          nx, PyArray_Return(ap_tx), ny, PyArray_Return(ap_ty),
                          PyArray_Return(ap_c), fp, ier);
@@ -2470,6 +2480,16 @@ static int fitpack_module_exec(PyObject *module) {
     Py_INCREF(fitpack_error);
     if (PyModule_AddObject(module, "error", fitpack_error) < 0) {
         Py_DECREF(fitpack_error);
+        return -1;
+    }
+
+    FuckingUBError = PyErr_NewException("scipy.interpolate._fitpack.FuckingUBError", NULL, NULL);
+    if (FuckingUBError == NULL) {
+        return -1;
+    }
+    Py_INCREF(FuckingUBError);
+    if (PyModule_AddObject(module, "FuckingUBError", FuckingUBError) < 0) {
+        Py_DECREF(FuckingUBError);
         return -1;
     }
 
