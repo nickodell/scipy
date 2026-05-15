@@ -1490,12 +1490,18 @@ class TestRectBivariateSpline:
     @given(
         kx=st.integers(min_value=1, max_value=5),
         ky=st.integers(min_value=1, max_value=5),
-        s=st.floats(min_value=0.0, max_value=1e6,
-                    allow_nan=False, allow_infinity=False),
+        # s=0 triggers interpolation branch; s>0 triggers smoothing branch
+        s=st.one_of(
+            st.just(0.0),
+            st.floats(min_value=1e-6, max_value=1e6,
+                      allow_nan=False, allow_infinity=False),
+        ),
+        # grid=False triggers bispeu instead of bispev
+        grid=st.booleans(),
         z_data=st.data(),
     )
     @settings(max_examples=50)
-    def test_spline_large_2d_fuzz(self, kx, ky, s, z_data):
+    def test_spline_large_2d_fuzz(self, kx, ky, s, grid, z_data):
         # Draw nx >= kx+1, then constrain ny so nx*ny <= 100 MB of float64
         max_elements = 100 * 1024 * 1024 // 8
         nx = z_data.draw(st.integers(min_value=kx + 1, max_value=5000),
@@ -1521,8 +1527,26 @@ class TestRectBivariateSpline:
         except ValueError:
             # FITPACK may reject inputs that fail convergence; not a crash
             return
-        z_spl = spl(x, y)
+
+        # 50% no derivatives, 50% at least one derivative (drawn jointly)
+        use_derivs = z_data.draw(st.booleans(), label="use_derivs")
+        if use_derivs:
+            dx = z_data.draw(st.integers(min_value=0, max_value=min(2, kx)), label="dx")
+            dy = z_data.draw(st.integers(min_value=0, max_value=min(2, ky)), label="dy")
+        else:
+            dx, dy = 0, 0
+
+        # grid=True: bispev (no deriv) or parder (deriv)
+        # grid=False: bispeu (no deriv) or pardeu (deriv)
+        try:
+            z_spl = spl(x, y, dx=dx, dy=dy, grid=grid)
+        except ValueError:
+            return
         assert not np.isnan(z_spl).any()
+
+        # Exercise the integral path (dblint)
+        z_int = spl.integral(x[0], x[-1], y[0], y[-1])
+        assert not np.isnan(z_int)
 
 
 class TestRectSphereBivariateSpline:
