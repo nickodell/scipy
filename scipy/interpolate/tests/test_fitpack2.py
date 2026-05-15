@@ -5,6 +5,9 @@ import warnings
 
 import numpy as np
 import pytest
+from hypothesis import given, settings
+import hypothesis.strategies as st
+import hypothesis.extra.numpy as hyp_num
 from pytest import raises as assert_raises
 from scipy._lib._array_api import (
     xp_assert_equal, xp_assert_close, assert_almost_equal, assert_array_almost_equal
@@ -1481,6 +1484,45 @@ class TestRectBivariateSpline:
         z_spl_custom = _ndbspline_call_like_bivariate(spl_custom, x, y)
         assert not np.isnan(z_spl_custom).any()
         xp_assert_close(z_spl_custom, z, atol=0.1, rtol=0.1)
+
+    @pytest.mark.slow
+    @pytest.mark.fail_slow(10)
+    @given(
+        kx=st.integers(min_value=1, max_value=5),
+        ky=st.integers(min_value=1, max_value=5),
+        s=st.floats(min_value=0.0, max_value=1e6,
+                    allow_nan=False, allow_infinity=False),
+        z_data=st.data(),
+    )
+    @settings(max_examples=50)
+    def test_spline_large_2d_fuzz(self, kx, ky, s, z_data):
+        # Draw nx >= kx+1, then constrain ny so nx*ny <= 100 MB of float64
+        max_elements = 100 * 1024 * 1024 // 8
+        nx = z_data.draw(st.integers(min_value=kx + 1, max_value=5000),
+                         label="nx")
+        max_ny = min(5000, max_elements // nx)
+        ny = z_data.draw(st.integers(min_value=ky + 1, max_value=max(ky + 1, max_ny)),
+                         label="ny")
+
+        z = z_data.draw(
+            hyp_num.arrays(
+                np.float64, (nx, ny),
+                elements=st.floats(-1e6, 1e6,
+                                   allow_nan=False, allow_infinity=False),
+            ),
+            label="z",
+        )
+
+        x = np.linspace(0.0, 1.0, nx)
+        y = np.linspace(0.0, 1.0, ny)
+
+        try:
+            spl = RectBivariateSpline(x, y, z, s=s, kx=kx, ky=ky)
+        except ValueError:
+            # FITPACK may reject inputs that fail convergence; not a crash
+            return
+        z_spl = spl(x, y)
+        assert not np.isnan(z_spl).any()
 
 
 class TestRectSphereBivariateSpline:
