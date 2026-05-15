@@ -1,5 +1,6 @@
 #include "dfitpack.h"
 #include <stdio.h>
+#include <limits.h>
 
 char dfitpack_ub_error_msg[512];
 
@@ -5745,6 +5746,13 @@ restart_iteration:
                         rn, fpms, *reducx);
                     *ier = 3; return;
                 }
+                if (npl1_f > INT_MAX || npl1_f < INT_MIN) {
+                    snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                        "fpregr x-direction: (int)(rn * fpms / *reducx) overflows int: "
+                        "value=%.17g rn=%.17g fpms=%.17g *reducx=%.17g",
+                        npl1_f, rn, fpms, *reducx);
+                    *ier = 3; return;
+                }
                 npl1 = (int)npl1_f;
             }
             // nplx = min0(nplusx*2,max0(npl1,nplusx/2,1))
@@ -5771,6 +5779,13 @@ restart_iteration:
                         "fpregr y-direction: (int)(rn * fpms / *reducy) is NaN: "
                         "rn=%.17g fpms=%.17g *reducy=%.17g",
                         rn, fpms, *reducy);
+                    *ier = 3; return;
+                }
+                if (npl1_f > INT_MAX || npl1_f < INT_MIN) {
+                    snprintf(dfitpack_ub_error_msg, sizeof(dfitpack_ub_error_msg),
+                        "fpregr y-direction: (int)(rn * fpms / *reducy) overflows int: "
+                        "value=%.17g rn=%.17g fpms=%.17g *reducy=%.17g",
+                        npl1_f, rn, fpms, *reducy);
                     *ier = 3; return;
                 }
                 npl1 = (int)npl1_f;
