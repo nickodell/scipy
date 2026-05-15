@@ -5802,6 +5802,11 @@ restart_iteration:
             if (nply > temp1) { nply = temp1; }
         }
 
+        printf("fpregr: nx=%d ny=%d  adding nplx=%d nply=%d  "
+               "fp=%.6g s=%.6g fpms=%.6g acc=%.6g (%.1fx from done)\n",
+               *nx, *ny, nplx, nply,
+               *fp, s, fpms, acc, fabs(fpms) / acc);
+
         // Super weird goto logic
         if (nplx < nply) { goto L210; }
         if (nplx == nply) {
