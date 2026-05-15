@@ -3,9 +3,9 @@
 click<8.3.0
 spin
 mypy==1.19.1
-pyrefly==0.63.0
+#pyrefly==0.63.0
 typing_extensions
 types-psutil
 pycodestyle
-ruff>=0.12.0
+#ruff>=0.12.0
 cython-lint>=0.12.2

@@ -126,7 +126,7 @@ if host_machine.system() == 'darwin'
   endif
 endif
 
-if get_option('b_sanitize') != 'none'
+if get_option('b_sanitize') != 'none' or get_option('c_args').contains('-fsanitize')
   if cc.get_id() == 'clang'
     ignore_file = meson.current_source_dir() / 'tools' / 'asan-ignore.txt'
     add_global_arguments('-fsanitize-ignorelist=' + ignore_file, language: ['c', 'cpp'])

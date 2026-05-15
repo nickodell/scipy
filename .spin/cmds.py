@@ -123,7 +123,21 @@ def build(*, parent_callback, meson_args, jobs, verbose, werror, asan, debug,
                                         "Please also check CXXFLAGS and FFLAGS.")
 
     if asan:
-        meson_args = meson_args + ('-Db_sanitize=address,undefined', )
+        # b_sanitize applies to all compilers including gfortran, which does
+        # not support -fsanitize. Apply flags explicitly to C/C++ only.
+        # Note: -Dc_args overrides CFLAGS, so include libomp path here too.
+        sanitize = '-fsanitize=address,undefined'
+        libomp = subprocess.run(
+            ['brew', '--prefix', 'libomp'],
+            capture_output=True, text=True, check=True
+        ).stdout.strip()
+        compile_args = f'{sanitize} -I{libomp}/include'
+        meson_args = meson_args + (
+            f'-Dc_args={compile_args}',
+            f'-Dcpp_args={compile_args}',
+            f'-Dc_link_args={sanitize}',
+            f'-Dcpp_link_args={sanitize}',
+        )
 
     if setup_args:
         meson_args = meson_args + tuple([str(arg) for arg in setup_args])
