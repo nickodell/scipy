@@ -1497,7 +1497,7 @@ class TestRectBivariateSpline:
     def test_spline_large_2d_nan_in_givens_overflow(self):
         from scipy.interpolate._fitpack import FuckingUBError
         x, y, z = self._sample_large_2d_data(50, 150)
-        with pytest.raises(FuckingUBError):
+        with pytest.raises(FuckingUBError, match="fpregr x-direction: .* overflows int"):
             RectBivariateSpline(x, y, z, s=1, maxit=2)
 
     def test_spline_large_2d_nan_in_givens_sweep(self):
