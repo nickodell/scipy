@@ -1,6 +1,7 @@
 import warnings
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from types import GenericAlias
 from typing import TYPE_CHECKING, Literal
 
 import numpy as np
@@ -10,6 +11,7 @@ from scipy.optimize import minimize_scalar
 from scipy.stats._common import ConfidenceInterval
 from scipy.stats._qmc import check_random_state
 from scipy.stats._stats_py import _var
+from scipy._lib._array_api import xp_capabilities
 from scipy._lib._util import _transition_to_rng, DecimalNumber, SeedType
 
 
@@ -50,6 +52,9 @@ class DunnettResult:
     _rng: SeedType = field(repr=False)
     _ci: ConfidenceInterval | None = field(default=None, repr=False)
     _ci_cl: DecimalNumber | None = field(default=None, repr=False)
+
+    # generic type compatibility with scipy-stubs
+    __class_getitem__: classmethod = classmethod(GenericAlias)
 
     def __str__(self):
         # Note: `__str__` prints the confidence intervals from the most
@@ -179,6 +184,7 @@ class DunnettResult:
         return self._ci
 
 
+@xp_capabilities(np_only=True)
 @_transition_to_rng('random_state', replace_doc=False)
 def dunnett(
     *samples: "npt.ArrayLike",  # noqa: D417
@@ -193,7 +199,7 @@ def dunnett(
 
     Parameters
     ----------
-    sample1, sample2, ... : 1D array_like
+    *samples : 1D array_like
         The sample measurements for each experimental group.
     control : 1D array_like
         The sample measurements for the control group.

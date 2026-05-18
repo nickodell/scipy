@@ -1,3 +1,5 @@
+#include <cmath>
+
 #include "xsf_wrappers.h"
 #include <xsf/airy.h>
 #include <xsf/amos.h>
@@ -30,7 +32,6 @@
 #include <xsf/trig.h>
 #include <xsf/wright_bessel.h>
 #include <xsf/zeta.h>
-#include "xsf_special.h"
 
 #include <xsf/cephes/cbrt.h>
 #include <xsf/cephes/erfinv.h>
@@ -287,14 +288,6 @@ npy_cdouble special_cloggamma(npy_cdouble z) { return to_ccomplex(xsf::loggamma(
 
 npy_cdouble special_lambertw(npy_cdouble z, long k, double tol) {
     return to_ccomplex(xsf::lambertw(to_complex(z), k, tol));
-}
-
-npy_cdouble special_sph_harm(long m, long n, double theta, double phi) {
-    return to_ccomplex(::sph_harm(m, n, theta, phi));
-}
-
-npy_cdouble special_sph_harm_unsafe(double m, double n, double theta, double phi) {
-    return to_ccomplex(::sph_harm(static_cast<long>(m), static_cast<long>(n), theta, phi));
 }
 
 double cephes_expm1_wrap(double x) { return xsf::cephes::expm1(x); }
@@ -595,15 +588,33 @@ double xsf_chdtrc(double df, double x) { return xsf::chdtrc(df, x); }
 
 double xsf_chdtri(double df, double y) { return xsf::chdtri(df, y); }
 
-double xsf_fdtr(double a, double b, double x) { return xsf::fdtr(a, b, x); }
-
-double xsf_fdtrc(double a, double b, double x) { return xsf::fdtrc(a, b, x); }
-
-double xsf_fdtri(double a, double b, double y) { return xsf::fdtri(a, b, y); }
-
 double xsf_gdtr(double a, double b, double x) { return xsf::gdtr(a, b, x); }
 
 double xsf_gdtrc(double a, double b, double x) { return xsf::gdtrc(a, b, x); }
+
+double special_gdtria(double p, double b, double x) { 
+    if (x == 0) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    if ((b == 0) & (p == 0)) {
+        if (std::isinf(x) && (x > 0)) {
+            return std::numeric_limits<double>::quiet_NaN();
+        }
+        return 0.0;
+    }
+    return xsf::gammaincinv(b, p) / x;
+}
+
+double special_gdtrix(double a, double b, double p) { 
+    if ((a == 0) && (b == 0)) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    // if a or b is positive infinite, return NaN
+    if ((std::isinf(a) || std::isinf(b)) && (a >= 0 && b >= 0)) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    return xsf::gammaincinv(b, p) / a;
+}
 
 double xsf_gdtrib(double a, double p, double x) { return xsf::gdtrib(a, p, x); }
 
@@ -632,6 +643,29 @@ double xsf_log_ndtr(double x) { return xsf::log_ndtr(x); }
 npy_cdouble xsf_clog_ndtr(npy_cdouble x) { return to_ccomplex(xsf::log_ndtr(to_complex(x))); }
 
 double xsf_ndtri(double x) { return xsf::ndtri(x); }
+
+double special_nrdtrimn(double p, double std, double x) { 
+    if (std::isnan(std) || std <= 0) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    if (std::isnan(p) || p <= 0 || p >= 1) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    if (std::isnan(x)) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    return x - std * xsf::ndtri(p);
+}
+
+double special_nrdtrisd(double mean, double p, double x) { 
+    if (std::isnan(mean) || std::isnan(p) || std::isnan(x)) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    if (p <= 0 || p >= 1) {
+        return std::numeric_limits<double>::quiet_NaN();
+    }
+    return (x - mean) / xsf::ndtri(p);
+}
 
 double xsf_owens_t(double h, double a) { return xsf::owens_t(h, a); }
 

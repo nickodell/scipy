@@ -107,10 +107,11 @@ coo_tocsr           v iiiIIT*I*I*T
 coo_todense         v iilIIT*Ti
 coo_todense_nd      v IllIT*Ti
 coo_matvec          v lIITT*T
-dia_matmat          v iiiiITiiiIT*V*W
 coo_matvec_nd       v llIITT*T
 coo_matmat_dense    v llIITT*T
 coo_matmat_dense_nd v lllIIITT*T
+dia_tocsr           i iiiiITI*T*I*I
+dia_matmat          v iiiiITiiiIT*V*W
 dia_matvec          v iiiiITT*T
 dia_matvecs         v iiiiITiT*T
 cs_graph_components i iII*I
@@ -213,7 +214,7 @@ def get_thunk_type_set():
     -------
     i_types : list [(j, I_typenum, None, I_type, None), ...]
          Pairing of index type numbers and the corresponding C++ types,
-         and an unique index `j`. This is for routines that are parameterized
+         and a unique index `j`. This is for routines that are parameterized
          only by I but not by T.
     it_types : list [(j, I_typenum, T_typenum, I_type, T_type), ...]
          Same as `i_types`, but for routines parameterized both by T and I.
