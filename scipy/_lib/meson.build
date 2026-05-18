@@ -107,11 +107,27 @@ py3.extension_module('messagestream',
   subdir: 'scipy/_lib'
 )
 
+
+xp_fastpath_args = [
+    '-DCYTHON_TRACE=1'
+]
+py3.extension_module('xp_fastpath',
+  lib_cython_gen.process('xp_fastpath.pyx'),
+  c_args: cython_c_args + xp_fastpath_args,
+  include_directories: 'src',
+  dependencies: np_dep,
+  link_args: version_link_args,
+  install: true,
+  subdir: 'scipy/_lib'
+)
+
 python_sources = [
   '__init__.py',
   '_array_api.py',
   '_array_api_compat_vendor.py',
+  '_array_api_docs_tables.py',
   '_array_api_no_0d.py',
+  '_array_api_override.py',
   '_bunch.py',
   '_ccallback.py',
   '_disjoint_set.py',
@@ -119,12 +135,11 @@ python_sources = [
   '_elementwise_iterative_method.py',
   '_gcutils.py',
   '_pep440.py',
+  '_public_api.py',
   '_sparse.py',
   '_testutils.py',
-  '_threadsafety.py',
   '_tmpdirs.py',
   '_util.py',
-  'decorator.py',
   'deprecation.py',
   'doccer.py',
   'uarray.py',
@@ -219,7 +234,7 @@ py3.install_sources(
   [
     'array_api_extra/src/array_api_extra/_lib/_utils/__init__.py',
     'array_api_extra/src/array_api_extra/_lib/_utils/_compat.py',
-    'array_api_extra/src/array_api_extra/_lib/_utils/_compat.pyi',    
+    'array_api_extra/src/array_api_extra/_lib/_utils/_compat.pyi',
     'array_api_extra/src/array_api_extra/_lib/_utils/_helpers.py',
     'array_api_extra/src/array_api_extra/_lib/_utils/_typing.py',
     'array_api_extra/src/array_api_extra/_lib/_utils/_typing.pyi',

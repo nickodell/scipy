@@ -67,6 +67,11 @@ def lombscargle(
     precenter : bool, optional
         Pre-center measurement values by subtracting the mean, if True. This is
         a legacy parameter and unnecessary if `floating_mean` is True.
+
+        .. deprecated:: 1.17.0
+            The `precenter` argument is deprecated and will be removed in SciPy 1.19.0.
+            The functionality can be substituted by passing ``y - y.mean()`` to `y`.
+
     normalize : bool | str, optional
         Compute normalized or complex (amplitude + phase) periodogram.
         Valid options are: ``False``/``"power"``, ``True``/``"normalize"``, or
@@ -102,17 +107,21 @@ def lombscargle(
     Notes
     -----
     The algorithm used will not automatically account for any unknown y offset, unless
-    floating_mean is True. Therefore, for most use cases, if there is a possibility of
-    a y offset, it is recommended to set floating_mean to True. If precenter is True,
-    it performs the operation ``y -= y.mean()``. However, precenter is a legacy
-    parameter, and unnecessary when floating_mean is True. Furthermore, the mean
-    removed by precenter does not account for sample weights, nor will it correct for
-    any bias due to consistently missing observations at peaks and/or troughs. When the
-    normalize parameter is "amplitude", for any frequency in freqs that is below
-    ``(2*pi)/(x.max() - x.min())``, the predicted amplitude will tend towards infinity.
-    The concept of a "Nyquist frequency" limit (see Nyquist-Shannon sampling theorem)
-    is not generally applicable to unevenly sampled data. Therefore, with unevenly
-    sampled data, valid frequencies in freqs can often be much higher than expected.
+    `floating_mean` is ``True``. Therefore, for most use cases, if there is a
+    possibility of a y offset, it is recommended to set `floating_mean` to ``True``.
+    Furthermore, `floating_mean` accounts for sample weights, and will also correct for
+    any bias due to consistently missing observations at peaks and/or troughs.
+
+    The legacy concept of "pre-centering" entails removing the mean from parameter `y`
+    before processing, i.e., passing ``y - y.mean()`` instead of setting the parameter
+    `floating_mean` to ``True``.
+
+    When the normalize parameter is "amplitude", for any frequency in freqs that is
+    below ``(2*pi)/(x.max() - x.min())``, the predicted amplitude will tend towards
+    infinity. The concept of a "Nyquist frequency" limit (see Nyquist-Shannon sampling
+    theorem) is not generally applicable to unevenly sampled data. Therefore, with
+    unevenly sampled data, valid frequencies in freqs can often be much higher than
+    expected for those familiar with methods like FFT.
 
     References
     ----------
@@ -243,11 +252,16 @@ def lombscargle(
         )
 
     # weight vector must sum to 1
-    weights *= 1.0 / weights.sum()
+    weights = weights * (1.0 / weights.sum())
 
     # if requested, perform precenter
     if precenter:
-        y -= y.mean()
+        msg = ("Use of parameter 'precenter' is deprecated as of SciPy 1.17.0 and "
+               "will be removed in 1.19.0. Please leave 'precenter' unspecified. "
+               "It can be exactly substituted by passing 'y = (y - y.mean())' into "
+               "the input. Consider setting `floating_mean` to True instead.")
+        warnings.warn(msg, DeprecationWarning, stacklevel=2)
+        y = y - y.mean()
 
     # transform arrays
     # row vector
@@ -494,7 +508,7 @@ def periodogram(x, fs=1.0, window='boxcar', nfft=None, detrend='constant',
                  scaling=scaling, axis=axis)
 
 
-def welch(x, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
+def welch(x, fs=1.0, window='hann_periodic', nperseg=None, noverlap=None, nfft=None,
           detrend='constant', return_onesided=True, scaling='density',
           axis=-1, average='mean'):
     r"""
@@ -517,7 +531,7 @@ def welch(x, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
         DFT-even by default. See `get_window` for a list of windows and
         required parameters. If `window` is array_like it will be used
         directly as the window and its length must be nperseg. Defaults
-        to a Hann window.
+        to a periodic Hann window.
     nperseg : int, optional
         Length of each segment. Defaults to None, but if window is str or
         tuple, is set to 256, and if window is array_like, is set to the
@@ -669,7 +683,7 @@ def welch(x, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
     return freqs, Pxx.real
 
 
-def csd(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
+def csd(x, y, fs=1.0, window='hann_periodic', nperseg=None, noverlap=None, nfft=None,
         detrend='constant', return_onesided=True, scaling='density',
         axis=-1, average='mean'):
     r"""
@@ -690,7 +704,7 @@ def csd(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
         DFT-even by default. See `get_window` for a list of windows and
         required parameters. If `window` is array_like it will be used
         directly as the window and its length must be nperseg. Defaults
-        to a Hann window.
+        to a periodic Hann window.
     nperseg : int, optional
         Length of each segment. Defaults to None, but if window is str or
         tuple, is set to 256, and if window is array_like, is set to the
@@ -897,6 +911,15 @@ def csd(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
     if np.iscomplexobj(x) and return_onesided:
         return_onesided = False
 
+    if x.shape[axis] < y.shape[axis]:  # zero-pad x to shape of y:
+        z_shape = list(y.shape)
+        z_shape[axis] = y.shape[axis] - x.shape[axis]
+        x = np.concatenate((x, np.zeros(z_shape)), axis=axis)
+    elif y.shape[axis] < x.shape[axis]:  # zero-pad y to shape of x:
+        z_shape = list(x.shape)
+        z_shape[axis] = x.shape[axis] - y.shape[axis]
+        y = np.concatenate((y, np.zeros(z_shape)), axis=axis)
+
     # using cast() to make mypy happy:
     fft_mode = cast(FFT_MODE_TYPE, 'onesided' if return_onesided else 'twosided')
     if scaling not in (scales := {'spectrum': 'magnitude', 'density': 'psd'}):
@@ -945,7 +968,7 @@ def csd(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
     return SFT.f, Pxy
 
 
-def spectrogram(x, fs=1.0, window=('tukey', .25), nperseg=None, noverlap=None,
+def spectrogram(x, fs=1.0, window=('tukey_periodic', .25), nperseg=None, noverlap=None,
                 nfft=None, detrend='constant', return_onesided=True,
                 scaling='density', axis=-1, mode='psd'):
     """Compute a spectrogram with consecutive Fourier transforms (legacy function).
@@ -973,7 +996,7 @@ def spectrogram(x, fs=1.0, window=('tukey', .25), nperseg=None, noverlap=None,
         DFT-even by default. See `get_window` for a list of windows and
         required parameters. If `window` is array_like it will be used
         directly as the window and its length must be nperseg.
-        Defaults to a Tukey window with shape parameter of 0.25.
+        Defaults to a periodic Tukey window with shape parameter of 0.25.
     nperseg : int, optional
         Length of each segment. Defaults to None, but if window is str or
         tuple, is set to 256, and if window is array_like, is set to the
@@ -1401,7 +1424,7 @@ def check_NOLA(window, nperseg, noverlap, tol=1e-10):
     return np.min(binsums) > tol
 
 
-def stft(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=None,
+def stft(x, fs=1.0, window='hann_periodic', nperseg=256, noverlap=None, nfft=None,
          detrend=False, return_onesided=True, boundary='zeros', padded=True,
          axis=-1, scaling='spectrum'):
     r"""Compute the Short Time Fourier Transform (legacy function).
@@ -1428,7 +1451,7 @@ def stft(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=None,
         DFT-even by default. See `get_window` for a list of windows and
         required parameters. If `window` is array_like it will be used
         directly as the window and its length must be nperseg. Defaults
-        to a Hann window.
+        to a periodic Hann window.
     nperseg : int, optional
         Length of each segment. Defaults to 256.
     noverlap : int, optional
@@ -1592,7 +1615,7 @@ def stft(x, fs=1.0, window='hann', nperseg=256, noverlap=None, nfft=None,
     return freqs, time, Zxx
 
 
-def istft(Zxx, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
+def istft(Zxx, fs=1.0, window='hann_periodic', nperseg=None, noverlap=None, nfft=None,
           input_onesided=True, boundary=True, time_axis=-1, freq_axis=-2,
           scaling='spectrum'):
     r"""Perform the inverse Short Time Fourier transform (legacy function).
@@ -1617,7 +1640,7 @@ def istft(Zxx, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
         DFT-even by default. See `get_window` for a list of windows and
         required parameters. If `window` is array_like it will be used
         directly as the window and its length must be nperseg. Defaults
-        to a Hann window. Must match the window used to generate the
+        to a periodic Hann window. Must match the window used to generate the
         STFT for faithful inversion.
     nperseg : int, optional
         Number of data points corresponding to each STFT segment. This
@@ -1695,7 +1718,7 @@ def istft(Zxx, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
     function.
 
     An STFT which has been modified (via masking or otherwise) is not
-    guaranteed to correspond to a exactly realizible signal. This
+    guaranteed to correspond to an exactly realizible signal. This
     function implements the iSTFT via the least-squares estimation
     algorithm detailed in [2]_, which produces a signal that minimizes
     the mean squared error between the STFT of the returned signal and
@@ -1894,7 +1917,7 @@ def istft(Zxx, fs=1.0, window='hann', nperseg=None, noverlap=None, nfft=None,
     return time, x
 
 
-def coherence(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None,
+def coherence(x, y, fs=1.0, window='hann_periodic', nperseg=None, noverlap=None,
               nfft=None, detrend='constant', axis=-1):
     r"""
     Estimate the magnitude squared coherence estimate, Cxy, of
@@ -1919,7 +1942,7 @@ def coherence(x, y, fs=1.0, window='hann', nperseg=None, noverlap=None,
         DFT-even by default. See `get_window` for a list of windows and
         required parameters. If `window` is array_like it will be used
         directly as the window and its length must be nperseg. Defaults
-        to a Hann window.
+        to a periodic Hann window.
     nperseg : int, optional
         Length of each segment. Defaults to None, but if window is str or
         tuple, is set to 256, and if window is array_like, is set to the
