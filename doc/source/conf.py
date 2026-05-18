@@ -51,6 +51,7 @@ extensions = [
     'matplotlib.sphinxext.plot_directive',
     'myst_nb',
     'jupyterlite_sphinx',
+    'array_api_capabilities_table',
 ]
 
 
@@ -120,7 +121,7 @@ add_function_parentheses = False
 # Ensure all our internal links work
 nitpicky = True
 nitpick_ignore = [
-    # This ignores errors for classes (OptimizeResults, sparse.dok_matrix)
+    # This ignores errors for classes (OptimizeResults, sparse.dok_array)
     # which inherit methods from `dict`. missing references to builtins get
     # ignored by default (see https://github.com/sphinx-doc/sphinx/pull/7254),
     # but that fix doesn't work for inherited methods.
@@ -190,6 +191,9 @@ warnings.filterwarnings(
     category=Warning,
 )
 
+warnings.filterwarnings("ignore", message="`scipy.odr` is deprecated",
+                        category=DeprecationWarning)
+
 # See https://github.com/sphinx-doc/sphinx/issues/12589
 suppress_warnings = [
     'autosummary.import_cycle',
@@ -250,25 +254,12 @@ if 'dev' in version:
     html_theme_options["switcher"]["version_match"] = "development"
     html_theme_options["show_version_warning_banner"] = False
 
-if 'versionwarning' in tags:  # noqa: F821
-    # Specific to docs.scipy.org deployment.
-    # See https://github.com/scipy/docs.scipy.org/blob/main/_static/versionwarning.js_t
-    src = ('var script = document.createElement("script");\n'
-           'script.type = "text/javascript";\n'
-           'script.src = "/doc/_static/versionwarning.js";\n'
-           'document.head.appendChild(script);')
-    html_context = {
-        'VERSIONCHECK_JS': src
-    }
-    html_js_files += ['versioncheck.js', ]
-
 html_title = f"{project} v{version} Manual"
 html_static_path = ['_static']
 html_last_updated_fmt = '%b %d, %Y'
 
 html_css_files = [
     "scipy.css",
-    "try_examples.css",
 ]
 
 # html_additional_pages = {
@@ -305,7 +296,8 @@ phantom_import_file = 'dump.xml'
 # Generate plots for example sections
 numpydoc_use_plots = True
 np_docscrape.ClassDoc.extra_public_methods = [  # should match class.rst
-    '__call__', '__mul__', '__getitem__', '__len__',
+    '__call__', '__mul__', '__getitem__', '__len__', '__pow__', '__matmul__',
+    '__truediv__', '__add__', '__rmul__', '__rmatmul__'
 ]
 
 # -----------------------------------------------------------------------------
@@ -360,8 +352,12 @@ coverage_ignore_c_items = {}
 plot_pre_code = """
 import warnings
 for key in (
-        'interp2d` is deprecated',  # Deprecation of scipy.interpolate.interp2d
         '`kurtosistest` p-value may be',  # intentionally "bad" example in docstring
+        'odr',
+        'pade',
+        'lagrange',
+        'approximate_taylor_polynomial',
+        'tsearch',
         ):
     warnings.filterwarnings(action='ignore', message='.*' + key + '.*')
 
@@ -503,7 +499,7 @@ def linkcode_resolve(domain, info):
         lineno = None
 
     if lineno:
-        linespec = f"#L{0}-L{1}".format(lineno, lineno + len(source) - 1)
+        linespec = f"#L{lineno}-L{lineno + len(source) - 1}"
     else:
         linespec = ""
 

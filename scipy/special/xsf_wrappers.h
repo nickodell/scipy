@@ -124,9 +124,6 @@ npy_cdouble special_lambertw(npy_cdouble z, long k, double tol);
 double special_rgamma(double x);
 npy_cdouble special_crgamma(npy_cdouble z);
 
-npy_cdouble special_sph_harm(long m, long n, double theta, double phi);
-npy_cdouble special_sph_harm_unsafe(double m, double n, double theta, double phi);
-
 double special_ellipk(double m);
 
 double cephes_airy_wrap(double x, double *ai, double *aip, double *bi, double *bip);
@@ -337,11 +334,10 @@ double xsf_bdtrc(double k, int n, double p);
 double xsf_chdtr(double df, double x);
 double xsf_chdtrc(double df, double x);
 double xsf_chdtri(double df, double y);
-double xsf_fdtr(double a, double b, double x);
-double xsf_fdtrc(double a, double b, double x);
-double xsf_fdtri(double a, double b, double y);
 double xsf_gdtr(double a, double b, double x);
 double xsf_gdtrc(double a, double b, double x);
+double special_gdtria(double p, double b, double x);
+double special_gdtrix(double a, double b, double p);
 double xsf_gdtrib(double a, double p, double x);
 double xsf_kolmogorov(double x);
 double xsf_kolmogc(double x);
@@ -356,6 +352,8 @@ npy_cdouble xsf_cndtr(npy_cdouble x);
 double xsf_log_ndtr(double x);
 npy_cdouble xsf_clog_ndtr(npy_cdouble x);
 double xsf_ndtri(double x);
+double special_nrdtrimn(double p, double std, double x);
+double special_nrdtrisd(double mean, double p, double x);
 double xsf_owens_t(double h, double a);
 double xsf_pdtr(double k, double m);
 double xsf_pdtrc(double k, double m);

@@ -68,12 +68,23 @@ def _vectorized_filter_iv(input, function, size, footprint, output, mode, cval, 
     if size is not None and footprint is not None:
         raise ValueError("Either `size` or `footprint` may be provided, not both.")
 
-    # Either footprint or size must be provided, and these determine the core
-    # dimensionality...
+    if axes is None:
+        axes = tuple(range(-input.ndim, 0))
+    elif np.isscalar(axes):
+        axes = (axes,)
+    n_axes = len(axes)
+    n_batch = input.ndim - n_axes
+
+    if n_axes > input.ndim:
+        message = ("The length of `axes` may not exceed the dimensionality of `input`"
+                   "(`input.ndim`).")
+        raise ValueError(message)
+
+    # Either footprint or size must be provided
     footprinted_function = function
     if size is not None:
         # If provided, size must be an integer or tuple of integers.
-        size = (size,)*input.ndim if np.isscalar(size) else tuple(size)
+        size = (size,)*n_axes if np.isscalar(size) else tuple(size)
         valid = [xp.isdtype(xp.asarray(i).dtype, 'integral') and i > 0 for i in size]
         if not all(valid):
             raise ValueError("All elements of `size` must be positive integers.")
@@ -84,13 +95,10 @@ def _vectorized_filter_iv(input, function, size, footprint, output, mode, cval, 
         def footprinted_function(input, *args, axis=-1, **kwargs):
             return function(input[..., footprint], *args, axis=-1, **kwargs)
 
-    n_axes = len(size)
-    n_batch = input.ndim - n_axes
-
-    # ...which can't exceed the dimensionality of `input`.
-    if n_axes > input.ndim:
-        message = ("The dimensionality of the window (`len(size)` or `footprint.ndim`) "
-                   "may not exceed the number of axes of `input` (`input.ndim`).")
+    # And by now, the dimensionality of the footprint must equal the number of axes
+    if n_axes != len(size):
+        message = ("`axes` must be compatible with the dimensionality "
+                   "of the window specified by `size` or `footprint`.")
         raise ValueError(message)
 
     # If this is not *equal* to the dimensionality of `input`, then `axes`
@@ -101,9 +109,10 @@ def _vectorized_filter_iv(input, function, size, footprint, output, mode, cval, 
                        "(`len(size)` or `footprint.ndim`) does not equal the number "
                        "of axes of `input` (`input.ndim`).")
             raise ValueError(message)
-        axes = (axes,) if np.isscalar(axes) else axes
     else:
-        axes = tuple(range(-n_axes, 0))
+        axes = tuple(range(-n_axes, 0)) if axes is None else axes
+
+    axes = (axes,) if np.isscalar(axes) else axes
 
     # If `origin` is provided, then it must be "broadcastable" to a tuple with length
     # equal to the core dimensionality.
@@ -150,10 +159,9 @@ def _vectorized_filter_iv(input, function, size, footprint, output, mode, cval, 
 
     # For simplicity, work with `axes` at the end.
     working_axes = tuple(range(-n_axes, 0))
-    if axes is not None:
-        input = xp.moveaxis(input, axes, working_axes)
-        output = (xp.moveaxis(output, axes, working_axes)
-                  if output is not None else output)
+    input = xp.moveaxis(input, axes, working_axes)
+    output = (xp.moveaxis(output, axes, working_axes)
+              if output is not None else output)
 
     # Wrap the function to limit maximum memory usage, deal with `footprint`,
     # and populate `output`. The latter requires some verbosity because we
@@ -190,15 +198,15 @@ def _vectorized_filter_iv(input, function, size, footprint, output, mode, cval, 
                                                          **kwargs)
         return output
 
-    return (input, wrapped_function, size, mode, cval,
-            origin, working_axes, n_axes, n_batch, xp)
+    return (input, wrapped_function, size, mode, cval, origin,
+            working_axes, axes, n_axes, n_batch, xp)
 
 
 @_ni_docstrings.docfiller
 def vectorized_filter(input, function, *, size=None, footprint=None, output=None,
                       mode='reflect', cval=None, origin=None, axes=None,
                       batch_memory=2**30):
-    """Filter an array with a vectorized Python callable as the kernel
+    """Filter an array with a vectorized Python callable as the kernel.
 
     Parameters
     ----------
@@ -211,8 +219,22 @@ def vectorized_filter(input, function, *, size=None, footprint=None, output=None
 
         where ``axis`` specifies the axis (or axes) of ``window`` along which
         the filter function is evaluated.
-    %(size_foot)s
-    %(output)s
+    size : scalar or tuple, optional
+        See `footprint` below. Ignored if `footprint` is given.
+    footprint : array, optional
+        Either `size` or `footprint` must be defined. `size` gives
+        the shape that is taken from the input array, at every element
+        position, to define the input to the filter function.
+        `footprint` is a boolean array that specifies (implicitly) a
+        shape, but also which of the elements within this shape will get
+        passed to the filter function. Thus ``size=(n, m)`` is equivalent
+        to ``footprint=np.ones((n, m))``.
+        We adjust `size` to the number of dimensions indicated by `axes`.
+        For instance, if `axes` is ``(0, 2, 1)`` and ``n`` is passed for ``size``,
+        then the effective `size` is ``(n, n, n)``.
+    output : array, optional
+        The array in which to place the output. By default, an array of the dtype
+        returned by `function` will be created.
     mode : {'reflect', 'constant', 'nearest', 'mirror', 'wrap'}, optional
         The `mode` parameter determines how the input array is extended
         beyond its boundaries. Default is 'reflect'. Behavior for each valid
@@ -409,7 +431,7 @@ def vectorized_filter(input, function, *, size=None, footprint=None, output=None
 
     """  # noqa: E501
 
-    (input, function, size, mode, cval, origin, working_axes, n_axes, n_batch, xp
+    (input, function, size, mode, cval, origin, working_axes, axes, n_axes, n_batch, xp
      ) = _vectorized_filter_iv(input, function, size, footprint, output, mode, cval,
         origin, axes, batch_memory)
 
@@ -455,7 +477,7 @@ def vectorized_filter(input, function, *, size=None, footprint=None, output=None
     res = function(view)
 
     # move working_axes back to original positions
-    return xp.moveaxis(res, working_axes, axes) if axes is not None else res
+    return xp.moveaxis(res, working_axes, axes)
 
 
 def _invalid_origin(origin, lenw):
@@ -691,6 +713,7 @@ def gaussian_filter1d(input, sigma, axis=-1, order=0, output=None,
     Returns
     -------
     gaussian_filter1d : ndarray
+        Returned array of same shape as `input`.
 
     Notes
     -----
@@ -980,8 +1003,8 @@ def generic_laplace(input, derivative2, output=None, mode="reflect",
     %(output)s
     %(mode_multiple)s
     %(cval)s
-    %(extra_keywords)s
     %(extra_arguments)s
+    %(extra_keywords)s
     axes : tuple of int or None
         The axes over which to apply the filter. If a `mode` tuple is
         provided, its length must match the number of axes.
@@ -1066,7 +1089,8 @@ def gaussian_laplace(input, sigma, output=None, mode="reflect",
     axes : tuple of int or None
         The axes over which to apply the filter. If `sigma` or `mode` tuples
         are provided, their length must match the number of axes.
-    Extra keyword arguments will be passed to gaussian_filter().
+    **kwargs
+        Extra keyword arguments will be passed to `gaussian_filter`.
 
     Returns
     -------
@@ -1138,8 +1162,8 @@ def generic_gradient_magnitude(input, derivative, output=None,
     %(output)s
     %(mode_multiple)s
     %(cval)s
-    %(extra_keywords)s
     %(extra_arguments)s
+    %(extra_keywords)s
     axes : tuple of int or None
         The axes over which to apply the filter. If a `mode` tuple is
         provided, its length must match the number of axes.
@@ -1191,7 +1215,8 @@ def gaussian_gradient_magnitude(input, sigma, output=None,
     axes : tuple of int or None
         The axes over which to apply the filter. If `sigma` or `mode` tuples
         are provided, their length must match the number of axes.
-    Extra keyword arguments will be passed to gaussian_filter().
+    **kwargs
+        Extra keyword arguments will be passed to `gaussian_filter`.
 
     Returns
     -------
@@ -1628,7 +1653,7 @@ def minimum_filter1d(input, size, axis=-1, output=None,
 
     References
     ----------
-    .. [1] http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2777
+    .. [1] http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2777.
     .. [2] http://www.richardhartersworld.com/cri/2001/slidingmin.html
 
 
@@ -1686,7 +1711,7 @@ def maximum_filter1d(input, size, axis=-1, output=None,
 
     References
     ----------
-    .. [1] http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2777
+    .. [1] http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.42.2777.
     .. [2] http://www.richardhartersworld.com/cri/2001/slidingmin.html
 
     Examples
@@ -1967,7 +1992,14 @@ def _rank_filter(input, rank, size=None, footprint=None, output=None,
                 "A sequence of modes is not supported by non-separable rank "
                 "filters")
         mode = _ni_support._extend_mode_to_code(mode, is_filter=True)
-        if input.ndim == 1:
+        # Some corner cases are currently not allowed to use the
+        # "new"/fast 1D rank filter code, including when the
+        # footprint is large compared to the array size.
+        # See discussion in gh-23293; longer-term it may be possible
+        # to allow the fast path for these corner cases as well,
+        # if algorithmic fixes are found.
+        lim2 = input.size - ((footprint.size - 1) // 2 - origin)
+        if input.ndim == 1 and ((lim2 >= 0) or (input.size == 1)):
             if input.dtype in (np.int64, np.float64, np.float32):
                 x = input
                 x_out = output
@@ -2220,6 +2252,27 @@ def generic_filter1d(input, function, filter_size, axis=-1,
     In addition, some other low-level function pointer specifications
     are accepted, but these are for backward compatibility only and should
     not be used in new code.
+
+    Examples
+    --------
+    This example defines and applies a custom callback function that computes
+    the range (maximum minus minimum) within a sliding window of size 3.
+    It utilizes `numpy.lib.stride_tricks.sliding_window_view` and demonstrates the
+    required in-place modification of the ``output_line`` array.
+
+    >>> import numpy as np
+    >>> from scipy.ndimage import generic_filter1d
+    >>> from numpy.lib.stride_tricks import sliding_window_view
+
+    >>> def local_range(input_line, output_line):
+    ...     # input_line includes padded values according to `filter_size` and `mode`
+    ...     v = sliding_window_view(input_line, 3)
+    ...     # modify `output_line` in-place rather than returning the result
+    ...     output_line[:] = v.max(axis=1) - v.min(axis=1)
+
+    >>> x = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+    >>> generic_filter1d(x, local_range, filter_size=3)
+    array([1., 2., 2., 2., 1.])
 
     """
     if extra_keywords is None:

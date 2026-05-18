@@ -1,0 +1,20 @@
+runners:
+  - name: gpu-runner
+    cloud: aws
+    instance_type: g4dn.2xlarge
+    # AMI options: Ubuntu with Nvidia drivers
+    # ami-0c6b386534e3e1534
+    # AMI options: DLAMI Ubuntu 22.04
+    # ami-014cf2391cb36896e
+    # AMI found via 
+    # aws ec2 describe-images --region "us-east-2" --owners amazon \
+    #   --filters "Name=name,Values=Deep Learning Base OSS Nvidia Driver GPU AMI (Ubuntu 22.04)*" \
+    #   --query='reverse(sort_by(Images, &CreationDate))[0].ImageId'
+    machine_image: ami-0f1a998148248b8fa
+    region: us-east-2
+    preemptible: true
+    cache: true
+    labels:
+      - cirun-aws-gpu
+    extra_config:
+      cache: true

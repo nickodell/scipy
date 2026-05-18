@@ -7,6 +7,7 @@ import functools
 import numpy as np
 
 from scipy._lib._util import MapWrapper, _FunctionWrapper
+from scipy._lib._array_api import xp_capabilities
 
 
 class LRUDict(collections.OrderedDict):
@@ -81,16 +82,6 @@ def _max_norm(x):
     return np.amax(abs(x))
 
 
-def _get_sizeof(obj):
-    try:
-        return sys.getsizeof(obj)
-    except TypeError:
-        # occurs on pypy
-        if hasattr(obj, '__sizeof__'):
-            return int(obj.__sizeof__())
-        return 64
-
-
 class _Bunch:
     def __init__(self, **kwargs):
         self.__keys = kwargs.keys()
@@ -103,6 +94,7 @@ class _Bunch:
         return f"_Bunch({key_value_pairs})"
 
 
+@xp_capabilities(np_only=True)
 def quad_vec(f, a, b, epsabs=1e-200, epsrel=1e-8, norm='2', cache_size=100e6,
              limit=10000, workers=1, points=None, quadrature=None, full_output=False,
              *, args=()):
@@ -348,7 +340,7 @@ def quad_vec(f, a, b, epsabs=1e-200, epsrel=1e-8, norm='2', cache_size=100e6,
             global_error = float(err)
             rounding_error = float(rnd)
 
-            cache_count = cache_size // _get_sizeof(ig)
+            cache_count = cache_size // sys.getsizeof(ig)
             interval_cache = LRUDict(cache_count)
         else:
             global_integral += ig
