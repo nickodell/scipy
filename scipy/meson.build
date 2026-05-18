@@ -5,6 +5,7 @@ if not get_option('_without-fortran')
     error('If you are using GCC on Windows, you must also use GFortran! Detected ' + ff.get_id())
   endif
 endif
+# foo
 
 cython_c_args = ['-DCYTHON_CCOMPLEX=0'] # see gh-18975 for why we need this
 if is_mingw
