@@ -101,7 +101,7 @@ jobs:
           # test runner parallel clashes with OpenBLAS multithreading
           $env:OPENBLAS_NUM_THREADS=1
           $env:SCIPY_LOG_DIR="$env:GITHUB_WORKSPACE\test-logs"
-          spin test -j4 --mode full -- -k "test_spline_large_2d" --durations=25 --timeout=120
+          spin test -j4 --mode full -- -k "test_spline_large_2d" --durations=25 --timeout=60
 
       - name: Upload test logs
         if: always()
