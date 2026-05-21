@@ -1,5 +1,48 @@
 #include "dfitpack.h"
 
+/* ===== dfitpack debug logging ===== */
+#include <stdio.h>
+#include <time.h>
+#include <stdlib.h>
+#ifdef _WIN32
+#  include <process.h>
+#  define DFITPACK_GETPID() ((int)_getpid())
+#else
+#  include <unistd.h>
+#  define DFITPACK_GETPID() ((int)getpid())
+#endif
+
+static FILE *_dfitpack_log_fp = NULL;
+
+static void _dfitpack_log_msg(const char *event, const char *func)
+{
+    if (!_dfitpack_log_fp) {
+        const char *dir = getenv("SCIPY_LOG_DIR");
+        const char *worker = getenv("PYTEST_XDIST_WORKER");
+        char path[1024];
+        if (worker)
+            snprintf(path, sizeof(path), "%s/dfitpack_%s.log",
+                     dir ? dir : ".", worker);
+        else
+            snprintf(path, sizeof(path), "%s/dfitpack_%d.log",
+                     dir ? dir : ".", DFITPACK_GETPID());
+        _dfitpack_log_fp = fopen(path, "a");
+        if (!_dfitpack_log_fp) return;
+    }
+    struct timespec ts;
+    timespec_get(&ts, TIME_UTC);
+    const struct tm *tm_info = localtime(&ts.tv_sec);
+    char tbuf[32];
+    strftime(tbuf, sizeof(tbuf), "%Y-%m-%dT%H:%M:%S", tm_info);
+    fprintf(_dfitpack_log_fp, "%s.%03ld %s %s\n",
+            tbuf, (long)(ts.tv_nsec / 1000000L), event, func);
+    fflush(_dfitpack_log_fp);
+}
+
+#define DFITPACK_LOG_ENTER(fn) _dfitpack_log_msg("ENTER", (fn))
+#define DFITPACK_LOG_EXIT(fn)  _dfitpack_log_msg("EXIT",  (fn))
+/* ===== end dfitpack debug logging ===== */
+
 // The following are not yet translated from the original FITPACK Fortran77 code.
 // cocosp
 // concon
@@ -128,6 +171,7 @@ bispeu(const double *tx, int nx, const double *ty, int ny, const double *c,
        int kx, int ky, const double *x, const double *y, double *z, int m,
        double *wrk, int lwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("bispeu");
     int iwrk[2];
     int lwest = kx + ky + 2;
 
@@ -149,6 +193,7 @@ bispev(const double *tx, int nx, const double *ty, int ny, const double *c,
        int kx, int ky, const double *x, int mx, const double *y, int my,
        double *z, double *wrk, int lwrk, int *iwrk, int kwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("bispev");
     int i, iw, lwest;
 
     // before starting computations a data check is made. if the input data
@@ -182,6 +227,7 @@ clocur(const int iopt, const int ipar, const int idim, const int m, double *u, c
        int *n, double *t, const int nc, double *c, double *fp, double *wrk, const int lwrk,
        int *iwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("clocur");
     // subroutine clocur determines a smooth approximating closed spline
     // curve s(u), i.e.
     //     x1 = s1(u)
@@ -295,6 +341,7 @@ curfit(const int iopt, const int m, const double *x, const double *y, const doub
        int *n, double *t, double *c, double *fp, double *wrk, const int lwrk,
        int *iwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("curfit");
     int i, ia, ib, ifp, ig, iq, iz, j, k1, k2, lwest, maxit, nmin;
 
     // we set up the parameters tol and maxit
@@ -351,6 +398,7 @@ double
 dblint(double* tx, const int nx, double* ty, const int ny, double* c, const int kx, const int ky,
        const double xb, const double xe, const double yb, const double ye, double* wrk)
 {
+    DFITPACK_LOG_ENTER("dblint");
     int nkx1 = nx - kx - 1;
     int nky1 = ny - ky - 1;
     double res = 0.0;
@@ -624,6 +672,7 @@ fpbspl(const double* t, const int n, const int k, const double x, const int l, d
 void
 fpchec(const double* x, const int m, const double* t, const int n, const int k, int* ier)
 {
+    DFITPACK_LOG_ENTER("fpchec");
     int k1 = k + 1;
     int k2 = k1 + 1;
     int nk1 = n - k1;
@@ -8032,6 +8081,7 @@ void
 insert(const int iopt, const double* t, const int n, const double* c, const int k, const double x,
        double* tt, int* nn, double* cc, const int nest, int* ier)
 {
+    DFITPACK_LOG_ENTER("insert");
     // Faithful translation of Fortran insert.f
     *ier = 10;
     if (nest <= n) { return; }
@@ -8074,6 +8124,7 @@ parcur(const int iopt, const int ipar, const int idim, const int m, double *u, c
        const double *w, double *ub, double *ue, const int k, const double s, const int nest, int *n, double *t,
        const int nc, double *c, double *fp, double *wrk, const int lwrk, int *iwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("parcur");
     double tol, dist;
     int i, ia, ib, ifp, ig, iq, iz, i1, i2, j, k1, k2, lwest, maxit, nmin, ncc;
 
@@ -8159,6 +8210,7 @@ parder(const double *tx, int nx, const double *ty, int ny, double *c,
             int kx, int ky, int nux, int nuy, const double *x, int mx,
             const double *y, int my, double *z, double *wrk, int lwrk,
             int *iwrk, int kwrk, int *ier) {
+    DFITPACK_LOG_ENTER("parder");
 
     int kx1 = kx + 1;
     int ky1 = ky + 1;
@@ -8270,6 +8322,7 @@ pardeu(const double *tx, int nx, const double *ty, int ny, double *c,
        int kx, int ky, int nux, int nuy, const double *x, const double *y,
        double *z, int m, double *wrk, int lwrk, int *iwrk, int kwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("pardeu");
     // Initialize variables
     int kx1 = kx + 1;
     int ky1 = ky + 1;
@@ -8370,6 +8423,7 @@ void
 pardtc(const double* tx, const int nx, const double* ty, const int ny, const double* c,
        const int kx, const int ky, const int nux, const int nuy, double* newc, int* ier)
 {
+    DFITPACK_LOG_ENTER("pardtc");
     // before starting computations a data check is made. if the input data
     // are invalid control is immediately repassed to the calling program.
     *ier = 10;
@@ -8457,6 +8511,7 @@ percur(const int iopt, const int m, const double *x, const double *y, const doub
        const double s, const int nest, int *n, double *t, double *c, double *fp,
        double *wrk, const int lwrk, int *iwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("percur");
     int i, ia1, ia2, ib, ifp, ig1, ig2, iq, iz, i1, i2, j1, j2, k1, k2, lwest, maxit, m1, nmin;
     double per, tol;
 
@@ -8527,6 +8582,7 @@ regrid(const int iopt, const int mx, const double *x, const int my, const double
        const int nxest, const int nyest, const int maxit, int *nx, double *tx, int *ny, double *ty, double *c, double *fp,
        double *wrk, const int lwrk, int *iwrk, const int kwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("regrid");
     // regrid determines a smooth bivariate spline approximation for gridded data
     const double tol = 0.001;
 
@@ -8615,6 +8671,7 @@ void
 spalde(const double *t, const int n, const double *c, const int nc, const int k1, const double x,
        double* d, int* ier)
 {
+    DFITPACK_LOG_ENTER("spalde");
     (void)nc; // Unused.
     *ier = 10;
     int nk1 = n - k1;
@@ -8637,6 +8694,7 @@ spgrid(const int *iopt, const int *ider, const int mu, const double *u, const in
        const int nuest, const int nvest, int *nu, double *tu, int *nv, double *tv, double *c,
        double *fp, double *wrk, const int lwrk, int *iwrk, const int kwrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("spgrid");
     double per, tol, uu, ve, rmax, rmin, rn, rb = 0.0, re = 0.0;
     int i, i1, i2, j, jwrk, j1, j2, kndu, kndv, knru, knrv, kwest, l;
     int ldr, lfpu, lfpv, lwest, lww, m, maxit, mumin, muu, nc;
@@ -8820,6 +8878,7 @@ sphere(const int iopt, const int m, const double *teta, const double *phi, const
        double *wrk1, const int lwrk1, double *wrk2, const int lwrk2, int *iwrk, const int kwrk,
        int *ier)
 {
+    DFITPACK_LOG_ENTER("sphere");
     double tol, pi2;
     int i, ib1, ib3, ki, kn, kwest, la, lbt, lcc, lcs, lro, j;
     int lbp, lco, lf, lff, lfp, lh, lq, lst, lsp, lwest, maxit, ncest, ncc, ntt;
@@ -8912,6 +8971,7 @@ void
 splder(const double *t, const int n, const double *c, const int nc, const int k, const int nu,
        const double *x, double *y, const int m, const int e, double *wrk, int *ier)
 {
+    DFITPACK_LOG_ENTER("splder");
     (void)nc; // nc is not used
     int l, kk, i, j, l1, l2, nk2, k2, ll;
     double ak, arg, fac, sp;
@@ -9035,6 +9095,7 @@ void
 splev(const double *t, const int n, const double *c, const int nc, const int k,
       const double *x, double *y, const int m, const int e, int *ier)
 {
+    DFITPACK_LOG_ENTER("splev");
     (void)nc; // nc is not used
     int k1, l, ll, l1, nk1, k2;
     double arg, sp, tb, te;
@@ -9101,6 +9162,7 @@ splev(const double *t, const int n, const double *c, const int nc, const int k,
 double
 splint(const double *t, const int n, const double *c, const int nc, const int k, const double a, const double b, double* wrk)
 {
+    DFITPACK_LOG_ENTER("splint");
     (void)nc;  // Unused
     // calculate the integrals wrk(i) of the normalized b-splines
     // ni,k+1(x), i=1,2,...,n-k-1
@@ -9117,6 +9179,7 @@ splint(const double *t, const int n, const double *c, const int nc, const int k,
 void
 sproot(const double *t, const int n, const double *c, const int nc, double *zero, const int mest, int *m, int *ier)
 {
+    DFITPACK_LOG_ENTER("sproot");
     (void)nc; // Unused
     // subroutine sproot finds the zeros of a cubic spline s(x),which is
     // given in its normalized b-spline representation.
@@ -9283,6 +9346,7 @@ surfit(int iopt, int m, double* x, double* y, double* z, double* w,
        int* ny, double* ty, double* c, double* fp, double* wrk1, int lwrk1,
        double* wrk2, int lwrk2, int* iwrk, int kwrk, int* ier)
 {
+    DFITPACK_LOG_ENTER("surfit");
     // ..local scalars..
     double tol;
     int i, ib1, ib3, jb1, ki, kmax, km1, km2, kn, kwest, kx1, ky1, la, lbx;

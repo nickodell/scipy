@@ -1,8 +1,10 @@
 # Pytest customization
+import datetime
 import json
 import multiprocessing
 import os
 import sys
+import threading
 import warnings
 import tempfile
 from contextlib import contextmanager
@@ -36,6 +38,49 @@ try:
     PARALLEL_RUN_AVAILABLE = True
 except Exception:
     PARALLEL_RUN_AVAILABLE = False
+
+
+###########################################################################
+# Per-process test logging (for reproducing crashes under pytest-xdist)
+
+_test_log_fp = None
+_test_log_lock = threading.Lock()
+
+
+def _get_test_log():
+    global _test_log_fp
+    if _test_log_fp is not None:
+        return _test_log_fp
+    log_dir = os.environ.get('SCIPY_LOG_DIR', '.')
+    os.makedirs(log_dir, exist_ok=True)
+    worker_id = os.environ.get('PYTEST_XDIST_WORKER', f'main_{os.getpid()}')
+    log_path = os.path.join(log_dir, f'pytest_{worker_id}.log')
+    _test_log_fp = open(log_path, 'a', buffering=1)
+    return _test_log_fp
+
+
+def _log_test_event(msg):
+    ts = datetime.datetime.now().isoformat(timespec='milliseconds')
+    with _test_log_lock:
+        fp = _get_test_log()
+        fp.write(f"{ts} {msg}\n")
+        fp.flush()
+
+
+def pytest_runtest_logstart(nodeid, location):
+    _log_test_event(f"START {nodeid}")
+
+
+def pytest_runtest_logreport(report):
+    if report.when == 'call':
+        _log_test_event(
+            f"END   {report.nodeid} outcome={report.outcome} "
+            f"duration={report.duration:.3f}s"
+        )
+    elif report.when == 'teardown' and report.failed:
+        _log_test_event(f"TEARDOWN_FAILED {report.nodeid}")
+
+###########################################################################
 
 
 def pytest_configure(config):
