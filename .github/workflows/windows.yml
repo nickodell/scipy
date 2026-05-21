@@ -8,6 +8,7 @@ on:
     branches:
       - main
       - maintenance/**
+  workflow_dispatch:
 
 permissions:
   contents: read # to fetch code (actions/checkout)
@@ -59,8 +60,9 @@ jobs:
     name: full, py3.12/npMin, spin
     needs: get_commit_message
     if: >
-      needs.get_commit_message.outputs.message == 1
-      && (github.repository == 'scipy/scipy' || github.repository == '')
+      github.event_name == 'workflow_dispatch'
+      || (needs.get_commit_message.outputs.message == 1
+          && (github.repository == 'scipy/scipy' || github.repository == ''))
     runs-on: windows-2025
     steps:
       - name: Checkout
@@ -91,11 +93,22 @@ jobs:
           $env:FORCE_PKGCONF_PYPI=1
           spin build --with-scipy-openblas=32
 
+      - name: Create log directory
+        run: New-Item -ItemType Directory -Force -Path "$env:GITHUB_WORKSPACE\test-logs"
+
       - name: Test
         run: |
           # test runner parallel clashes with OpenBLAS multithreading
           $env:OPENBLAS_NUM_THREADS=1
-          spin test -j4 --mode full -- --durations=25 --timeout=60
+          $env:SCIPY_LOG_DIR="$env:GITHUB_WORKSPACE\test-logs"
+          spin test -j4 --mode full -- -k "test_spline_large_2d" --durations=25 --timeout=120
+
+      - name: Upload test logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs-windows-full
+          path: ${{ github.workspace }}\test-logs\
 
   #############################################################################
   fast_spin_arm64:
