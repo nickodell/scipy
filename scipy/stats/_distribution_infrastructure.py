@@ -2256,18 +2256,25 @@ class UnivariateDistribution(_ProbabilityDistribution):
         m = self._median_dispatch(**params)
 
         def f(x, **params):
-            return -self._pxf_dispatch(x, **params)
+            res = -self._pxf_dispatch(x, **params)
+            #print(f"d({x}) = {res}")
+            return res
 
         res_b = elementwise.bracket_minimum(f, m, xmin=a, xmax=b, kwargs=params)
+        is_0d = res_b.bracket[0].ndim == 0
+        if is_0d:
+            res_b.bracket = [np.atleast_1d(e) for e in res_b.bracket]
         res = elementwise.find_minimum(f, res_b.bracket, kwargs=params,
                                        tolerances=dict(xatol=xatol))
         mode = np.asarray(res.x)
+        if is_0d:
+            mode = mode.reshape(())
 
         # bracket_minimum fails with status == -1 if the mode is at a boundary.
         # We have to consider this as a special case; there's no way to include
         # this logic in find_minimum; it has to treat the bracket as invalid.
         mode_at_boundary = res_b.status == -1
-        fl, fm, fr = res_b.bracket
+        fl, fm, fr = res_b.f_bracket
         mode_at_left = mode_at_boundary & (fl <= fm)
         mode_at_right = mode_at_boundary & (fr < fm)
         mode[mode_at_left] = a[mode_at_left]
